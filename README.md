@@ -105,6 +105,15 @@ Run the tests: `python manage.py test rent`
 
 ## Git workflow
 
+**Do this once before your first commit**, or GitHub won't link your commits to your account and they won't count as yours. Use the email on your GitHub account (github.com/settings/emails):
+
+```bash
+git config --global user.name "Your Name"
+git config --global user.email "your-github-email@example.com"
+```
+
+Then for each piece of work:
+
 ```bash
 git checkout main && git pull                 # start from the latest
 git checkout -b us-03-handoffs                # your own branch
