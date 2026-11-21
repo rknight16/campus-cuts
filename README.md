@@ -2,33 +2,67 @@
 
 COMP2140 Group 3 project. Django + PostgreSQL web app that tracks weekly rent for Campus Cuts Barbershop and Salon (see the SRS and SDS).
 
-## Setup (once)
+## Setup on Mac (once)
 
-You need Python 3.10+ and PostgreSQL.
-
-**Mac:** install [Postgres.app](https://postgresapp.com) and open it. **Windows:** install PostgreSQL from postgresql.org and remember the password you set for the `postgres` user.
+You need Python 3.10+ (python.org) and PostgreSQL. Install [Postgres.app](https://postgresapp.com), open it and click **Initialize**. Keep it open while you work.
 
 ```bash
-git clone <repo link>
+git clone https://github.com/rknight16/campus-cuts.git
 cd campus-cuts
+export PATH="/Applications/Postgres.app/Contents/Versions/latest/bin:$PATH"
 python3 -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
+source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env               # Windows: copy .env.example .env
-```
-
-Open `.env` and set `DB_USER` / `DB_PASSWORD` for your PostgreSQL (Postgres.app: user is your Mac username, password blank).
-
-Create the database, set up the tables and load the demo data:
-
-```bash
-createdb campuscuts                # or create it in pgAdmin
+cp .env.example .env
+createdb campuscuts
 python manage.py migrate
 python manage.py seed
 python manage.py runserver
 ```
 
-Open http://127.0.0.1:8000. The admin site is at http://127.0.0.1:8000/admin/ (log in as `owner`).
+`.env` works as is with Postgres.app (user `postgres`, no password).
+
+**Every time after:** `cd campus-cuts`, `source .venv/bin/activate`, `python manage.py runserver` (Postgres.app open).
+
+## Setup on Windows (once)
+
+1. **Python:** install from [python.org](https://www.python.org/downloads/). On the first installer screen, tick **"Add python.exe to PATH"**.
+2. **PostgreSQL:** install from [postgresql.org/download/windows](https://www.postgresql.org/download/windows/) (the EDB installer). Keep the default port 5432. **Write down the password you set for the `postgres` user.** You can untick Stack Builder at the end.
+3. **Git:** install from [git-scm.com](https://git-scm.com/download/win) (defaults are fine), or use GitHub Desktop.
+4. **Create the database:** open **pgAdmin 4** from the Start menu, log in with your postgres password, right-click **Databases → Create → Database...**, name it `campuscuts`, Save.
+
+Then open **PowerShell** (or the terminal in VS Code):
+
+```powershell
+git clone https://github.com/rknight16/campus-cuts.git
+cd campus-cuts
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+copy .env.example .env
+notepad .env
+```
+
+In Notepad, put your postgres password after `DB_PASSWORD=`, save and close. Then:
+
+```powershell
+python manage.py migrate
+python manage.py seed
+python manage.py runserver
+```
+
+**If Activate.ps1 gives a red "running scripts is disabled" error**, run this once, then try again:
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+```
+**If `python` opens the Microsoft Store**, Python wasn't added to PATH. Reinstall and tick the box, or use `py` instead of `python`.
+**If migrate says "password authentication failed"**, the password in `.env` doesn't match the one you set when installing PostgreSQL.
+
+**Every time after:** `cd campus-cuts`, `.venv\Scripts\Activate.ps1`, `python manage.py runserver`.
+
+## Using it
+
+Open http://127.0.0.1:8000. The admin site is at http://127.0.0.1:8000/admin/ (log in as `owner`). Stop the server with Ctrl+C. Run the tests with `python manage.py test rent`.
 
 ## Demo logins
 
