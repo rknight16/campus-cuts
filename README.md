@@ -103,6 +103,33 @@ Each page already exists as a placeholder with its permission check in place, an
 
 Run the tests: `python manage.py test rent`
 
+## Check that it works
+
+After setup, do these two checks on your laptop.
+
+**1. Run the tests.** Postgres has to be running and the environment active:
+
+```bash
+python manage.py test rent
+```
+
+It should end with `Ran 15 tests` and `OK`.
+
+**2. Click through it.** Run `python manage.py runserver`, open http://127.0.0.1:8000 and log in as each of these (password `campuscuts2026`, log out top right between each):
+
+| Log in as | You should see |
+|---|---|
+| `owner` | The 5 shops and their supervisors, plus Dashboard, Contractors, Rent and Handoffs tabs |
+| `company` | The same shops, with only the Dashboard and Handoffs tabs |
+| `sup1` | Only Taylor Hall's contractors |
+| `c1002` | Kemar Brown's "My rent" page with last week's $15,000 payment |
+
+Then type these addresses in yourself:
+- As `sup1`, go to `127.0.0.1:8000/dashboard/`. It should say **Access denied**.
+- As `c1002`, go to `127.0.0.1:8000/account/3/` (someone else's page). It should say **Access denied**. `/account/2/` (Kemar's own page) should open.
+
+If all of that matches, your setup is good and you can start on your feature.
+
 ## Git workflow
 
 **Do this once before your first commit**, or GitHub won't link your commits to your account and they won't count as yours. Use the email on your GitHub account (github.com/settings/emails):
