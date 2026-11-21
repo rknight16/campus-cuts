@@ -1,0 +1,9 @@
+{% extends "rent/base.html" %}
+{% block content %}
+<h1>Company Supervisor</h1>
+<p class="muted">Rent period {{ period }}</p>
+<table>
+  <tr><th>Shop</th><th>Shop Supervisor</th></tr>
+  {% for s in shops %}<tr><td>{{ s.name }}</td><td>{{ s.supervisor.full_name|default:"None set" }}</td></tr>{% endfor %}
+</table>
+{% endblock %}
