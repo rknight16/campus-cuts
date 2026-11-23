@@ -1,6 +1,7 @@
 """Tests for the shared base: rent periods, rent settings, deletion guard, access control."""
 from datetime import date
 from decimal import Decimal
+from io import StringIO
 
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.management import call_command
@@ -122,7 +123,7 @@ class AccessTests(TestCase):
 
 class SeedTests(TestCase):
     def test_seed_loads_demo_data(self):
-        call_command("seed", stdout=open("/dev/null", "w"))
+        call_command("seed", stdout=StringIO())
         self.assertEqual(Shop.objects.count(), 5)
         self.assertEqual(Contractor.objects.count(), 17)
         self.assertEqual(Shop.objects.filter(supervisor__isnull=False).count(), 5)
