@@ -65,8 +65,9 @@ class Command(BaseCommand):
         today = timezone.localdate()
         current = RentPeriod.for_date(today)
         last_week = RentPeriod.for_date(today - timedelta(days=7))
-        # Settings start a few weeks back so last week has a rent in force
-        start = RentPeriod.for_date(today - timedelta(days=28))
+        # Settings start last week, the first week with payments. Starting any
+        # earlier would make every contractor overdue for weeks with no payments.
+        start = last_week
 
         owner = self._user("owner", "Terron", "Dewar", Role.OWNER)
         self._user("company", "Marlon", "Edwards", Role.COMPANY_SUPERVISOR)
