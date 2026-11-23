@@ -1,0 +1,95 @@
+{% extends "rent/base.html" %}
+{% load money %}
+{% block title %}Record a payment · Campus Cuts Rent{% endblock %}
+{% block content %}
+<h1>Record a payment</h1>
+
+{% if error %}<p class="msg error" role="alert">{{ error }}</p>{% endif %}
+
+<form method="get" class="card stack" id="pick">
+  <label>Contractor
+    <select name="contractor" onchange="this.form.submit()" required>
+      <option value="">Choose a contractor</option>
+      {% for c in contractors %}
+        <option value="{{ c.pk }}" {% if contractor and c.pk == contractor.pk %}selected{% endif %}>
+          {{ c.full_name }} ({{ c.staff_id }}){% if c.pay_type == "COMMISSION" %} · commission{% endif %}{% if not c.is_active %} · deactivated{% endif %}
+        </option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Rent period
+    <select name="period" onchange="this.form.submit()">
+      {% for p in periods %}
+        <option value="{{ p.pk }}" {% if p.pk == period.pk %}selected{% endif %}>{{ p }}{% if forloop.first %} (this week){% endif %}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <noscript><button class="btn secondary">Show</button></noscript>
+</form>
+
+{% if contractor %}
+  <h2>{{ contractor.full_name }} <span class="muted">· {{ period }}</span></h2>
+  <div class="stats">
+    <div class="stat"><span>Owed</span><strong>{% if summary.owed is None %}Not set{% else %}{{ summary.owed|money }}{% endif %}</strong></div>
+    <div class="stat"><span>Paid</span><strong>{{ summary.paid|money }}</strong></div>
+    <div class="stat"><span>Balance</span><strong>{{ summary.balance|money }}</strong></div>
+    <div class="stat"><span>Status</span><strong class="badge {% if summary.status == 'Paid' %}paid{% endif %}">{{ summary.status }}</strong></div>
+  </div>
+
+  {% if is_commission %}
+  <form method="post" class="card stack">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="earnings">
+    <input type="hidden" name="contractor" value="{{ contractor.pk }}">
+    <input type="hidden" name="period" value="{{ period.pk }}">
+    <h3>Step 1: Commission earnings</h3>
+    <p class="muted">{{ contractor.full_name }} is on commission. The shop gets 40% of earnings.</p>
+    <label>Earnings for {{ period }} ($)
+      <input name="earnings" inputmode="decimal" placeholder="e.g. 30000"
+             value="{% if form.action == 'earnings' %}{{ form.earnings }}{% elif earning %}{{ earning.earnings|floatformat:'-2' }}{% endif %}">
+    </label>
+    <button class="btn big secondary">{% include "rent/icon.html" with name="edit" %}{% if earning %}Update earnings{% else %}Save earnings{% endif %}</button>
+  </form>
+  {% endif %}
+
+  {% if summary.owed is not None %}
+    {% if summary.balance %}
+    <form method="post" class="card stack">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="payment">
+      <input type="hidden" name="contractor" value="{{ contractor.pk }}">
+      <input type="hidden" name="period" value="{{ period.pk }}">
+      {% if is_commission %}<h3>Step 2: Payment</h3>{% endif %}
+      <label>Amount paid in cash ($)
+        <input name="amount" inputmode="decimal" required placeholder="Balance is {{ summary.balance|money }}"
+               value="{% if form.action == 'payment' %}{{ form.amount }}{% endif %}" autofocus>
+      </label>
+      <label>Payment date
+        <input type="date" name="payment_date" required max="{{ today|date:'Y-m-d' }}"
+               value="{% if form.action == 'payment' %}{{ form.payment_date }}{% else %}{{ today|date:'Y-m-d' }}{% endif %}">
+      </label>
+      <button class="btn big">{% include "rent/icon.html" with name="cash" %}Save payment</button>
+    </form>
+    {% else %}
+      <p class="msg">{% include "rent/icon.html" with name="check" %}Paid in full for this rent period.</p>
+    {% endif %}
+  {% elif not is_commission %}
+    <p class="msg">No weekly rent is set for this shop for this period. Ask the Owner to set it.</p>
+  {% endif %}
+
+  <h3>Payments for this period</h3>
+  {% if period_payments %}
+  <div class="table-wrap"><table>
+    <tr><th>Amount</th><th>Paid on</th><th>Recorded by</th><th></th></tr>
+    {% for p in period_payments %}
+    <tr>
+      <td>{{ p.amount|money }}{% if p.corrections.all %} <span class="badge">Corrected</span>{% endif %}</td>
+      <td>{{ p.payment_date }}</td>
+      <td>{{ p.recorded_by }}</td>
+      <td><a class="btn small secondary" href="{% url 'correct_payment' p.pk %}">{% include "rent/icon.html" with name="edit" %}Correct</a></td>
+    </tr>
+    {% endfor %}
+  </table></div>
+  {% else %}<p class="muted">No payments recorded for this period yet.</p>{% endif %}
+{% endif %}
+{% endblock %}
