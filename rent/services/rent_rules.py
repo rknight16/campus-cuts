@@ -39,6 +39,11 @@ def commission_earnings(contractor, period):
     return CommissionEarning.objects.filter(contractor=contractor, rent_period=period).first()
 
 
+def commission_owed(earnings):
+    """The shop's 40% share of `earnings`, rounded to cents ($30,000 -> $12,000.00)."""
+    return (COMMISSION_SHARE * earnings).quantize(CENTS, rounding=ROUND_HALF_UP)
+
+
 def amount_owed(contractor, period):
     """What the contractor owes for `period`.
 
@@ -53,7 +58,7 @@ def amount_owed(contractor, period):
         earning = commission_earnings(contractor, period)
         if earning is None:
             return None
-        return (COMMISSION_SHARE * earning.earnings).quantize(CENTS, rounding=ROUND_HALF_UP)
+        return commission_owed(earning.earnings)
 
     setting = RentSetting.for_shop(contractor.shop, period)
     if setting is None:
