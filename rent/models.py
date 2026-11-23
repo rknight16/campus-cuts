@@ -177,7 +177,8 @@ class RentPeriod(models.Model):
         return self.start_date + timedelta(days=due_day)
 
     def __str__(self):
-        return f"{self.start_date:%-d %b} to {self.end_date:%-d %b %Y}"
+        # .day instead of %-d: %-d only works on Mac/Linux and crashes on Windows
+        return f"{self.start_date.day} {self.start_date:%b} to {self.end_date.day} {self.end_date:%b %Y}"
 
 
 # ---------------------------------------------------------------------------

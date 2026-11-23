@@ -142,12 +142,16 @@ git config --global user.email "your-github-email@example.com"
 Then for each piece of work:
 
 ```bash
-git checkout main && git pull                 # start from the latest
+git checkout main                             # start from the latest
+git pull
 git checkout -b us-03-handoffs                # your own branch
 # ... work, then:
-git add . && git commit -m "US-03: record shop handoff"
+git add .
+git commit -m "US-03: record shop handoff"
 git push -u origin us-03-handoffs             # then open a Pull Request on GitHub
 ```
+
+Run each line on its own. Windows PowerShell doesn't understand `&&`.
 
 Commit small and often, with the US number in the message. Our commit history is the evidence of who built what. Don't commit `.env`.
 
