@@ -139,3 +139,18 @@ class OverdueTests(TestCase):
         from django.utils import timezone
         self.assertEqual(rent_rules.overdue_periods(self.w.taylor_c),
                          rent_rules.overdue_periods(self.w.taylor_c, today=timezone.localdate()))
+
+
+class SeedOverdueTests(TestCase):
+    """After `seed`, only last week's three short payers are overdue (dashboard/US-06 demo)."""
+    def test_seed_overdue_is_only_last_weeks_short_payers(self):
+        from io import StringIO
+
+        from django.core.management import call_command
+
+        from rent.models import Contractor
+        call_command("seed", stdout=StringIO())
+        overdue = {c.staff_id: [b for _, b in rent_rules.overdue_periods(c)]
+                   for c in Contractor.objects.all() if rent_rules.overdue_periods(c)}
+        self.assertEqual(overdue, {"1003": [Decimal("5000")], "1010": [Decimal("18000")],
+                                   "1014": [Decimal("6000")]})
