@@ -15,6 +15,7 @@ urlpatterns = [
 
     # US-01 Raynardo
     path("payments/record/", payments.record_payment, name="record_payment"),
+    path("payments/<int:payment_id>/correct/", payments.correct_payment, name="correct_payment"),
     # US-02 Jordon Mingoes
     path("rent-settings/", rent_settings.rent_settings, name="rent_settings"),
     # US-03 Chiantina
