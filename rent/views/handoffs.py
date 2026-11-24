@@ -26,6 +26,9 @@ class ShopHandoffForm(forms.Form):
         decimal_places=2,
         min_value=0.01,
         label="Amount handed over",
+        error_messages={
+            "min_value": "The amount is invalid."
+        },
     )
     # Allows the user to select the date the handoff took place.
     handed_date = forms.DateField(
@@ -53,6 +56,9 @@ class OwnerHandoffForm(forms.Form):
         decimal_places=2,
         min_value=0.01,
         label="Amount handed over",
+        error_messages={
+            "min_value": "The amount is invalid."
+        },
     )
     # Allows the user to select the date the handoff took place.
     handed_date = forms.DateField(
@@ -76,6 +82,9 @@ class ConfirmHandoffForm(forms.Form):
         decimal_places=2,
         min_value=0.01,
         label="Amount actually received",
+        error_messages={
+            "min_value": "The amount is invalid."
+        },
     )
 
 
@@ -144,8 +153,7 @@ def handoffs(request):
         # Handle the Company Supervisor recording a handoff to the Owner.
         elif action == "record_owner":
             form = OwnerHandoffForm(request.POST)
-
-             # Only the Company Supervisor can record this handoff.
+            # Only the Company Supervisor can record this handoff.
             if user.role != Role.COMPANY_SUPERVISOR:
                 messages.error(
                     request, "You cannot record an owner handoff."

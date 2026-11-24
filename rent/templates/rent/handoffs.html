@@ -134,7 +134,10 @@
                     {% if is_company_supervisor and handoff.step == shop_step %}
                     <tr>
                         <td colspan="11">
-                            <form method="post">
+                            <form
+                                method="post"
+                                onsubmit="return confirm('Are you sure you want to confirm this shop handoff?');"
+                            >
                                 {% csrf_token %}
 
                                 <input type="hidden" name="action" value="confirm">
@@ -162,7 +165,10 @@
                     {% if is_owner and handoff.step == owner_step %}
                     <tr>
                         <td colspan="11">
-                            <form method="post">
+                            <form
+                                method="post"
+                                onsubmit="return confirm('Are you sure you want to confirm this owner handoff?');"
+                            >
                                 {% csrf_token %}
 
                                 <input type="hidden" name="action" value="confirm">
