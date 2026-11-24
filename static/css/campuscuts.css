@@ -204,6 +204,7 @@ h2,h3{margin:1.2em 0 .4em}
 .shop-facts dt{color:var(--ink-muted);font-size:var(--fs-sm)}
 .shop-facts dt .icon{width:16px;height:16px;vertical-align:-3px}
 .shop-facts dd{margin:0;font-weight:700;text-align:right}
+.receipt-facts{border:2px solid var(--black);border-radius:var(--radius);margin:0 0 14px}
 
 /* Login: full-bleed black, checker band, gold action */
 body.login-page{background:var(--black);color:var(--white);min-height:100vh}

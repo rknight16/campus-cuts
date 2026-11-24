@@ -49,7 +49,7 @@
       <a href="{% url 'supervisor_home' %}"{% if here == "supervisor_home" %} aria-current="page"{% endif %}>{% icon "shop" %}<span>My shop</span></a>
       <a href="{% url 'record_payment' %}"{% if here == "record_payment" or here == "correct_payment" %} aria-current="page"{% endif %}>{% icon "cash" %}<span>Record<span class="tab-long"> payment</span></span></a>
       <a href="{% url 'handoffs' %}"{% if here == "handoffs" %} aria-current="page"{% endif %}>{% icon "handoff" %}<span>Handoffs</span></a>
-      <a href="{% url 'receipts' %}"{% if here == "receipts" %} aria-current="page"{% endif %}>{% icon "receipt" %}<span>Receipts</span></a>
+      <a href="{% url 'receipts' %}"{% if here == "receipts" or here == "receipt_detail" %} aria-current="page"{% endif %}>{% icon "receipt" %}<span>Receipts</span></a>
     {% endif %}
     {% if user.is_contractor %}<a href="{% url 'my_account' %}"{% if here == "my_account" or here == "contractor_account" %} aria-current="page"{% endif %}>{% icon "wallet" %}<span>My rent</span></a>{% endif %}
   </nav>

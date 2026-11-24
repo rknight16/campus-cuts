@@ -1,26 +1,50 @@
 {% extends "rent/base.html" %}
+{% load ui money %}
+{% block title %}Receipt {{ d.number }} · Campus Cuts Rent{% endblock %}
 {% block content %}
-<h1>Receipt {{ d.number }}</h1>
-{% if d.is_corrected %}
-  <p><strong>Corrected</strong>{% if d.corrects_number %}: this replaces receipt {{ d.corrects_number }}.{% endif %}</p>
+{% if can_send %}
+<a class="back-link" href="{% url 'receipts' %}">{% icon "back" %}Back to receipts</a>
+{% else %}
+<a class="back-link" href="{% url 'my_account' %}">{% icon "back" %}Back to my rent</a>
 {% endif %}
-<table>
-  <tr><th>Shop</th><td>{{ d.shop }}</td></tr>
-  <tr><th>Contractor</th><td>{{ d.contractor.full_name }} ({{ d.contractor.staff_id }})</td></tr>
-  <tr><th>Rent period</th><td>{{ d.period }}</td></tr>
-  <tr><th>Amount paid</th><td>${{ d.amount|floatformat:"2g" }}</td></tr>
-  <tr><th>Balance still owed</th><td>${{ d.balance|floatformat:"2g" }}</td></tr>
-  <tr><th>Payment date</th><td>{{ d.payment_date|date:"j M Y" }}</td></tr>
-  <tr><th>Received by</th><td>{{ d.received_by }}</td></tr>
-</table>
+
+<header class="page-head">
+  <h1>Receipt No. {{ d.number }}</h1>
+  <p class="period">{% icon "shop" %}{{ d.shop }}</p>
+</header>
+
+{% if d.is_corrected %}
+<p class="note">{% icon "edit" %}<span><strong>Corrected receipt.</strong>{% if d.corrects_number %} This replaces receipt No. {{ d.corrects_number }}.{% endif %}</span></p>
+{% endif %}
+
+{# AC-1: what was paid and what is still owed #}
+<section class="balance-panel" aria-labelledby="receipt-who">
+  <div class="balance-who">
+    <h2 id="receipt-who">{{ d.contractor.full_name }}</h2>
+    <p>{% icon "calendar" %}{{ d.period }}</p>
+  </div>
+  <div class="balance-main">
+    <div>
+      <span class="balance-label">Amount paid</span>
+      <strong class="balance-figure">{{ d.amount|money }}</strong>
+    </div>
+    {% if d.is_corrected %}<span class="badge corrected">{% icon "edit" %}Corrected</span>{% endif %}
+  </div>
+  <p class="balance-sub">Balance still owed <strong>{{ d.balance|money }}</strong></p>
+</section>
+
+<dl class="shop-facts receipt-facts">
+  <div><dt>{% icon "user" %}Staff ID</dt><dd>{{ d.contractor.staff_id }}</dd></div>
+  <div><dt>{% icon "clock" %}Payment date</dt><dd>{{ d.payment_date|date:"j M Y" }}</dd></div>
+  <div><dt>{% icon "check" %}Received by</dt><dd>{{ d.received_by.get_full_name|default:d.received_by }}</dd></div>
+</dl>
 
 {% if can_send %}
   {% if link %}
-    <p><a class="btn big" href="{{ link }}" target="_blank" rel="noopener">Send on WhatsApp</a></p>
-    <p class="muted">This opens WhatsApp with the receipt already typed. Nothing is sent until you tap send.</p>
+    <a class="btn big" href="{{ link }}" target="_blank" rel="noopener">{% icon "forward" %}Send on WhatsApp</a>
+    <p class="note">{% icon "info" %}<span>This opens WhatsApp with the receipt already typed. Nothing is sent until you tap send.</span></p>
   {% else %}
-    <p role="alert"><strong>A phone number is needed</strong> to send this receipt on WhatsApp. The receipt is still saved.</p>
+    <p class="msg error" role="alert">{% icon "alert" %}<span><strong>A phone number is needed</strong> to send this receipt on WhatsApp. The receipt is still saved.</span></p>
   {% endif %}
-  <p><a href="{% url 'receipts' %}">Back to receipts</a></p>
 {% endif %}
 {% endblock %}

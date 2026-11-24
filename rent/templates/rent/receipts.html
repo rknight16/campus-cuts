@@ -1,22 +1,30 @@
 {% extends "rent/base.html" %}
+{% load ui money %}
+{% block title %}Receipts · Campus Cuts Rent{% endblock %}
 {% block content %}
-<h1>Receipts</h1>
-<p class="muted">{{ shop.name }}. A receipt is made each time a payment is saved or corrected.</p>
+<header class="page-head">
+  <h1>Receipts</h1>
+  <p class="period">{% icon "shop" %}{{ shop.name }}</p>
+</header>
+<p class="note">{% icon "info" %}<span>A receipt is made each time a payment is saved or corrected. Open one to send it on WhatsApp.</span></p>
+
 {% if rows %}
-<table>
-  <tr><th>Receipt</th><th>Contractor</th><th>Rent period</th><th>Paid</th><th>Still owed</th><th></th></tr>
-  {% for d in rows %}
-  <tr>
-    <td>{{ d.number }}{% if d.is_corrected %} <strong>(Corrected)</strong>{% endif %}</td>
-    <td>{{ d.contractor.full_name }}</td>
-    <td>{{ d.period }}</td>
-    <td>${{ d.amount|floatformat:"2g" }}</td>
-    <td>${{ d.balance|floatformat:"2g" }}</td>
-    <td><a class="btn small secondary" href="{% url 'receipt_detail' d.receipt.pk %}">Open</a></td>
-  </tr>
-  {% endfor %}
-</table>
+<div class="table-wrap"><table>
+  <thead><tr><th>Receipt</th><th>Contractor</th><th>Rent period</th><th>Paid</th><th>Still owed</th><th><span class="sr-only">Open</span></th></tr></thead>
+  <tbody>
+    {% for d in rows %}
+    <tr>
+      <td>No. {{ d.number }}{% if d.is_corrected %} <span class="badge corrected">{% icon "edit" %}Corrected</span>{% endif %}</td>
+      <td>{{ d.contractor.full_name }}</td>
+      <td>{{ d.period }}</td>
+      <td>{{ d.amount|money }}</td>
+      <td>{{ d.balance|money }}</td>
+      <td><a class="btn small secondary" href="{% url 'receipt_detail' d.receipt.pk %}" aria-label="Open receipt {{ d.number }} for {{ d.contractor.full_name }}">{% icon "receipt" %}Open</a></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table></div>
 {% else %}
-<p>No receipts yet. Record a payment and its receipt will appear here.</p>
+<p class="empty">{% icon "receipt" %}<span>No receipts yet. Record a payment and its receipt will appear here.</span></p>
 {% endif %}
 {% endblock %}
