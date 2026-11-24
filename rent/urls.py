@@ -15,7 +15,8 @@ urlpatterns = [
 
     # US-01 Raynardo
     path("payments/record/", payments.record_payment, name="record_payment"),
-    path("payments/<int:payment_id>/correct/", payments.correct_payment, name="correct_payment"),
+    path("payments/<int:payment_id>/correct/",
+         payments.correct_payment, name="correct_payment"),
     # US-02 Jordon Mingoes
     path("rent-settings/", rent_settings.rent_settings, name="rent_settings"),
     # US-03 Chiantina
@@ -26,7 +27,10 @@ urlpatterns = [
     path("contractors/", contractors.contractors, name="contractors"),
     # US-06 Raynardo
     path("account/", account.my_account, name="my_account"),
-    path("account/<int:contractor_id>/", account.contractor_account, name="contractor_account"),
+    path("account/<int:contractor_id>/",
+         account.contractor_account, name="contractor_account"),
     # US-07 Jordon Mingoes
     path("receipts/", receipts.receipts, name="receipts"),
+    path("receipts/<int:receipt_id>/",
+         receipts.receipt_detail, name="receipt_detail"),
 ]

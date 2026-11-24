@@ -1,0 +1,22 @@
+{% extends "rent/base.html" %}
+{% block content %}
+<h1>Receipts</h1>
+<p class="muted">{{ shop.name }}. A receipt is made each time a payment is saved or corrected.</p>
+{% if rows %}
+<table>
+  <tr><th>Receipt</th><th>Contractor</th><th>Rent period</th><th>Paid</th><th>Still owed</th><th></th></tr>
+  {% for d in rows %}
+  <tr>
+    <td>{{ d.number }}{% if d.is_corrected %} <strong>(Corrected)</strong>{% endif %}</td>
+    <td>{{ d.contractor.full_name }}</td>
+    <td>{{ d.period }}</td>
+    <td>${{ d.amount|floatformat:"2g" }}</td>
+    <td>${{ d.balance|floatformat:"2g" }}</td>
+    <td><a class="btn small secondary" href="{% url 'receipt_detail' d.receipt.pk %}">Open</a></td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p>No receipts yet. Record a payment and its receipt will appear here.</p>
+{% endif %}
+{% endblock %}

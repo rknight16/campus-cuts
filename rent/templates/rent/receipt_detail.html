@@ -1,0 +1,26 @@
+{% extends "rent/base.html" %}
+{% block content %}
+<h1>Receipt {{ d.number }}</h1>
+{% if d.is_corrected %}
+  <p><strong>Corrected</strong>{% if d.corrects_number %}: this replaces receipt {{ d.corrects_number }}.{% endif %}</p>
+{% endif %}
+<table>
+  <tr><th>Shop</th><td>{{ d.shop }}</td></tr>
+  <tr><th>Contractor</th><td>{{ d.contractor.full_name }} ({{ d.contractor.staff_id }})</td></tr>
+  <tr><th>Rent period</th><td>{{ d.period }}</td></tr>
+  <tr><th>Amount paid</th><td>${{ d.amount|floatformat:"2g" }}</td></tr>
+  <tr><th>Balance still owed</th><td>${{ d.balance|floatformat:"2g" }}</td></tr>
+  <tr><th>Payment date</th><td>{{ d.payment_date|date:"j M Y" }}</td></tr>
+  <tr><th>Received by</th><td>{{ d.received_by }}</td></tr>
+</table>
+
+{% if can_send %}
+  {% if link %}
+    <p><a class="btn big" href="{{ link }}" target="_blank" rel="noopener">Send on WhatsApp</a></p>
+    <p class="muted">This opens WhatsApp with the receipt already typed. Nothing is sent until you tap send.</p>
+  {% else %}
+    <p role="alert"><strong>A phone number is needed</strong> to send this receipt on WhatsApp. The receipt is still saved.</p>
+  {% endif %}
+  <p><a href="{% url 'receipts' %}">Back to receipts</a></p>
+{% endif %}
+{% endblock %}
