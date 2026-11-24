@@ -7,84 +7,31 @@
   <p class="period">{% icon "handoff" %}Cash moves from each shop to the Company Supervisor, then to the Owner.</p>
 </header>
 
-{# Form errors are shown once, as messages at the top of the page (base.html). #}
-{% if is_shop_supervisor %}
-<form method="post" class="card stack">
-  {% csrf_token %}
-  <input type="hidden" name="action" value="record_shop">
-  <h2 class="with-icon">{% icon "cash" %}Hand cash to the Company Supervisor</h2>
-  <p class="muted">Record the cash you are handing over for your shop.</p>
-  {% for field in shop_form %}
-    <label>{{ field.label }}{% if field.name == "amount" %} ($){% endif %}{{ field }}</label>
-  {% endfor %}
-  <button class="btn big">{% icon "handoff" %}Record handoff</button>
-</form>
+{# Field errors show under their field; errors about the whole handoff show as messages at the top (base.html). #}
+{% if waiting %}
+<section aria-labelledby="waiting">
+  <h2 class="with-icon" id="waiting">{% icon "clock" %}Waiting for you</h2>
+  <p class="muted">Count the cash, then confirm what you received.</p>
+  <ul class="handoffs">
+    {% for h in waiting %}{% include "rent/_handoff_card.html" with waiting=True %}{% endfor %}
+  </ul>
+</section>
 {% endif %}
 
-{% if is_company_supervisor %}
-<form method="post" class="card stack">
-  {% csrf_token %}
-  <input type="hidden" name="action" value="record_owner">
-  <h2 class="with-icon">{% icon "cash" %}Hand cash to the Owner</h2>
-  <p class="muted">Record the total you are handing to the Owner for a rent period, once the shops have handed over.</p>
-  {% for field in owner_form %}
-    <label>{{ field.label }}{% if field.name == "amount" %} ($){% endif %}{{ field }}</label>
-  {% endfor %}
-  <button class="btn big">{% icon "handoff" %}Record owner handoff</button>
-</form>
+{% if shop_form or owner_form %}
+  {% if is_shop_supervisor %}
+    {% include "rent/_handoff_form.html" with form=shop_form action="record_shop" heading="Hand cash to the Company Supervisor" intro="Record the cash you are handing over for your shop." expected_lead="You recorded" expected_tail="in rent for this period." button="Record handoff" folded=waiting %}
+  {% else %}
+    {% include "rent/_handoff_form.html" with form=owner_form action="record_owner" heading="Hand cash to the Owner" intro="Record the total you are handing to the Owner for a rent period, once the shops have handed over." expected_lead="You confirmed" expected_tail="from the shops for this period." button="Record owner handoff" folded=waiting %}
+  {% endif %}
 {% endif %}
 
 <h2 class="with-icon">{% icon "history" %}Handoff records</h2>
-{% if handoffs %}
+{% if records %}
 <ul class="handoffs">
-  {% for h in handoffs %}
-  <li class="handoff{% if h.is_mismatch %} is-mismatch{% endif %}">
-    <div class="handoff-head">
-      <span class="shop-icon" aria-hidden="true">{% if h.shop %}{% icon "shop" %}{% else %}{% icon "user" %}{% endif %}</span>
-      <div class="handoff-title">
-        <h3>{{ h.shop.name|default:"All shops" }}</h3>
-        <span>{{ h.get_step_display }}</span>
-      </div>
-      <span class="handoff-badges">
-        {% status_badge h.get_status_display %}
-        {% if h.is_mismatch %}{% status_badge "Mismatch" %}{% endif %}
-      </span>
-    </div>
-
-    <dl class="handoff-amounts">
-      <div><dt>Expected</dt><dd>{{ h.expected_amount|money }}</dd></div>
-      <div{% if h.amount_handed != h.expected_amount %} class="off"{% endif %}>
-        <dt>Handed</dt><dd>{{ h.amount_handed|money }}{% if h.amount_handed != h.expected_amount %}<span class="sr-only"> (different from expected)</span>{% endif %}</dd>
-      </div>
-      <div{% if h.amount_received is not None and h.amount_received != h.expected_amount %} class="off"{% endif %}>
-        <dt>Received</dt>
-        <dd>{% if h.amount_received is None %}<span class="muted">Not yet</span>{% else %}{{ h.amount_received|money }}{% if h.amount_received != h.expected_amount %}<span class="sr-only"> (different from expected)</span>{% endif %}{% endif %}</dd>
-      </div>
-    </dl>
-
-    <p class="handoff-meta">
-      {% icon "calendar" %}{{ h.rent_period }}<br>
-      {% icon "user" %}Handed over by {{ h.handed_by.get_full_name|default:h.handed_by }} on {{ h.handed_date|date:"j M Y" }}
-      {% if h.confirmed_by %}<br>{% icon "check" %}Confirmed by {{ h.confirmed_by.get_full_name|default:h.confirmed_by }} on {{ h.confirmed_at|date:"j M Y, g:i a" }}{% endif %}
-    </p>
-
-    {% if h.status == awaiting_status %}
-      {% if is_company_supervisor and h.step == shop_step or is_owner and h.step == owner_step %}
-      <form method="post" class="confirm-row">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="confirm">
-        <input type="hidden" name="handoff_id" value="{{ h.pk }}">
-        <label>Amount actually received ($)
-          <input type="number" name="amount_received" inputmode="decimal" min="0.01" step="0.01" required>
-        </label>
-        <button class="btn">{% icon "check" %}Confirm handoff</button>
-      </form>
-      {% endif %}
-    {% endif %}
-  </li>
-  {% endfor %}
+  {% for h in records %}{% include "rent/_handoff_card.html" with waiting=False %}{% endfor %}
 </ul>
 {% else %}
-<p class="empty">{% icon "handoff" %}<span>No handoffs have been recorded yet.</span></p>
+<p class="empty">{% icon "handoff" %}<span>{% if waiting %}No other handoffs yet.{% else %}No handoffs have been recorded yet.{% endif %}</span></p>
 {% endif %}
 {% endblock %}

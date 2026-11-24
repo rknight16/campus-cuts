@@ -1,5 +1,5 @@
 {% extends "rent/base.html" %}
-{% load ui %}
+{% load static ui %}
 {% block title %}Log in · Campus Cuts{% endblock %}
 {% block body_class %}login-page{% endblock %}
 {% block chrome %}
@@ -9,17 +9,16 @@
 {% block content %}
 <div class="login">
   <div class="login-brand">
-    <span class="login-mark" aria-hidden="true">{% icon "scissors" %}</span>
-    <p class="login-name">CAMPUS CUTS</p>
+    <img class="login-sign" src="{% static 'img/login-sign.webp' %}" width="610" height="667" alt="Campus Cuts, barbershop and salon" fetchpriority="high">
     <p class="login-sub">Rent and payments</p>
   </div>
   <section class="login-card" aria-labelledby="login-title">
     <h1 id="login-title">Log in</h1>
     {% if form.errors %}<p class="msg error" role="alert" id="login-error">{% icon "alert" %}<span>Wrong username or password.</span></p>{% endif %}
     <form method="post">{% csrf_token %}
-      <label>Username <input name="username" autocomplete="username" autocapitalize="none" autofocus required{% if form.errors %} aria-invalid="true" aria-describedby="login-error"{% endif %}></label>
-      <label>Password <input type="password" name="password" autocomplete="current-password" required{% if form.errors %} aria-invalid="true" aria-describedby="login-error"{% endif %}></label>
-      <button class="btn big gold">{% icon "login" %}Log in</button>
+      <label>Username <input name="username" value="{{ form.username.value|default:'' }}" autocomplete="username" autocapitalize="none" spellcheck="false" autofocus required{% if form.errors %} aria-invalid="true" aria-describedby="login-error"{% endif %}></label>
+      <label>Password <input type="password" name="password" autocomplete="current-password" enterkeyhint="go" required{% if form.errors %} aria-invalid="true" aria-describedby="login-error"{% endif %}></label>
+      <button class="btn big gold" data-busy-label="Logging in…">{% icon "login" %}Log in</button>
       <input type="hidden" name="next" value="{{ next }}">
     </form>
   </section>
