@@ -1,10 +1,11 @@
 {% extends "rent/base.html" %}
+{% load ui %}
 {% load money %}
 {% block title %}Record a payment · Campus Cuts Rent{% endblock %}
 {% block content %}
 <h1>Record a payment</h1>
 
-{% if error %}<p class="msg error" role="alert" id="form-error">{{ error }}</p>{% endif %}
+{% if error %}<p class="msg error" role="alert" id="form-error">{% icon "alert" %}<span>{{ error }}</span></p>{% endif %}
 
 <form method="get" class="card stack" id="pick">
   <label>Contractor
@@ -28,13 +29,23 @@
 </form>
 
 {% if contractor %}
-  <h2>{{ contractor.full_name }} <span class="muted">· {{ period }}</span></h2>
-  <div class="stats">
-    <div class="stat"><span>Owed</span><strong>{% if summary.owed is None %}Not set{% else %}{{ summary.owed|money }}{% endif %}</strong></div>
-    <div class="stat"><span>Paid</span><strong>{{ summary.paid|money }}</strong></div>
-    <div class="stat"><span>Balance</span><strong>{{ summary.balance|money }}</strong></div>
-    <div class="stat"><span>Status</span><strong class="badge {% if summary.status == 'Paid' %}paid{% endif %}">{{ summary.status }}</strong></div>
-  </div>
+  <section class="balance-panel" aria-labelledby="who">
+    <div class="balance-who">
+      <h2 id="who">{{ contractor.full_name }}</h2>
+      <p>{% icon "calendar" %}{{ period }}</p>
+    </div>
+    <div class="balance-main">
+      <div>
+        <span class="balance-label">Balance</span>
+        <strong class="balance-figure">{% if summary.balance is None %}Not set{% else %}{{ summary.balance|money }}{% endif %}</strong>
+      </div>
+      {% status_badge summary.status %}
+    </div>
+    {% if summary.owed %}{% percent summary.paid summary.owed as pct %}
+    <div class="progress" aria-hidden="true"><span style="width:{{ pct }}%"></span></div>
+    {% endif %}
+    <p class="balance-sub">Paid <strong>{{ summary.paid|money }}</strong> of <strong>{% if summary.owed is None %}amount not set{% else %}{{ summary.owed|money }}{% endif %}</strong> owed</p>
+  </section>
 
   {% if is_commission %}
   <form method="post" class="card stack">
@@ -48,7 +59,7 @@
       <input name="earnings" inputmode="decimal" placeholder="e.g. 30000"{% if error and form.action == 'earnings' %} aria-describedby="form-error"{% endif %}
              value="{% if form.action == 'earnings' %}{{ form.earnings }}{% elif earning %}{{ earning.earnings|floatformat:'-2' }}{% endif %}">
     </label>
-    <button class="btn big secondary">{% include "rent/icon.html" with name="edit" %}{% if earning %}Update earnings{% else %}Save earnings{% endif %}</button>
+    <button class="btn big secondary">{% icon "edit" %}{% if earning %}Update earnings{% else %}Save earnings{% endif %}</button>
   </form>
   {% endif %}
 
@@ -68,28 +79,28 @@
         <input type="date" name="payment_date" required max="{{ today|date:'Y-m-d' }}"{% if error and form.action == 'payment' %} aria-describedby="form-error"{% endif %}
                value="{% if form.action == 'payment' %}{{ form.payment_date }}{% else %}{{ today|date:'Y-m-d' }}{% endif %}">
       </label>
-      <button class="btn big">{% include "rent/icon.html" with name="cash" %}Save payment</button>
+      <button class="btn big">{% icon "cash" %}Save payment</button>
     </form>
     {% else %}
-      <p class="msg">{% include "rent/icon.html" with name="check" %}Paid in full for this rent period.</p>
+      <p class="msg success">{% icon "check" %}<span>Paid in full for this rent period.</span></p>
     {% endif %}
   {% elif not is_commission %}
-    <p class="msg">No weekly rent is set for this shop for this period. Ask the Owner to set it.</p>
+    <p class="msg">{% icon "info" %}<span>No weekly rent is set for this shop for this period. Ask the Owner to set it.</span></p>
   {% endif %}
 
-  <h3>Payments for this period</h3>
+  <h3 class="with-icon">{% icon "history" %}Payments for this period</h3>
   {% if period_payments %}
   <div class="table-wrap"><table>
     <tr><th>Amount</th><th>Paid on</th><th>Recorded by</th><th><span class="sr-only">Action</span></th></tr>
     {% for p in period_payments %}
     <tr>
-      <td>{{ p.amount|money }}{% if p.corrections.all %} <span class="badge">Corrected</span>{% endif %}</td>
+      <td>{{ p.amount|money }}{% if p.corrections.all %} <span class="badge corrected">{% icon "edit" %}Corrected</span>{% endif %}</td>
       <td>{{ p.payment_date }}</td>
       <td>{{ p.recorded_by }}</td>
-      <td><a class="btn small secondary" href="{% url 'correct_payment' p.pk %}">{% include "rent/icon.html" with name="edit" %}Correct</a></td>
+      <td><a class="btn small secondary" href="{% url 'correct_payment' p.pk %}">{% icon "edit" %}Correct</a></td>
     </tr>
     {% endfor %}
   </table></div>
-  {% else %}<p class="muted">No payments recorded for this period yet.</p>{% endif %}
+  {% else %}<p class="empty">{% icon "receipt" %}<span>No payments recorded for this period yet.</span></p>{% endif %}
 {% endif %}
 {% endblock %}

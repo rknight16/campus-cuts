@@ -1,45 +1,56 @@
-{% load static %}<!DOCTYPE html>
+{% load static ui %}<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
   <title>{% block title %}Campus Cuts Rent{% endblock %}</title>
   <link rel="stylesheet" href="{% static 'css/campuscuts.css' %}">
 </head>
-<body>
+<body class="{% block body_class %}{% if user.is_authenticated %}has-nav{% endif %}{% endblock %}">
+  {% include "rent/icon_sprite.html" %}
+  {% block chrome %}
   <header class="topbar">
-    <a class="brand" href="{% url 'home' %}">CAMPUS CUTS</a>
+    <a class="brand" href="{% url 'home' %}" aria-label="Campus Cuts rent, home">
+      <span class="brand-mark">{% icon "scissors" %}</span>
+      <span class="brand-name">CAMPUS CUTS<small>RENT</small></span>
+    </a>
     {% if user.is_authenticated %}
       <div class="who">
-        <span>{{ user }} · {{ user.get_role_display }}</span>
-        <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="link">Log out</button></form>
+        <span class="avatar" aria-hidden="true">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
+        <span class="who-text"><strong>{{ user.get_full_name|default:user.username }}</strong><span>{{ user.get_role_display }}</span></span>
+        <form method="post" action="{% url 'logout' %}">{% csrf_token %}
+          <button class="logout" aria-label="Log out">{% icon "logout" %}<span class="logout-label">Log out</span></button>
+        </form>
       </div>
     {% endif %}
   </header>
+  <div class="gold-rule"></div>
   <div class="checker"></div>
+  {% endblock %}
   {% if user.is_authenticated %}
   {% with here=request.resolver_match.url_name %}
   <nav class="tabs" aria-label="Main">
     {% if user.is_owner %}
-      <a href="{% url 'dashboard' %}"{% if here == 'dashboard' %} aria-current="page"{% endif %}>Dashboard</a>
-      <a href="{% url 'contractors' %}"{% if here == 'contractors' %} aria-current="page"{% endif %}>Contractors</a>
-      <a href="{% url 'rent_settings' %}"{% if here == 'rent_settings' %} aria-current="page"{% endif %}>Rent</a>
-      <a href="{% url 'handoffs' %}"{% if here == 'handoffs' %} aria-current="page"{% endif %}>Handoffs</a>
+      <a href="{% url 'dashboard' %}"{% if here == "dashboard" %} aria-current="page"{% endif %}>{% icon "chart" %}<span>Dashboard</span></a>
+      <a href="{% url 'contractors' %}"{% if here == "contractors" or here == "contractor_account" %} aria-current="page"{% endif %}>{% icon "users" %}<span>Contractors</span></a>
+      <a href="{% url 'rent_settings' %}"{% if here == "rent_settings" %} aria-current="page"{% endif %}>{% icon "calendar" %}<span>Rent</span></a>
+      <a href="{% url 'handoffs' %}"{% if here == "handoffs" %} aria-current="page"{% endif %}>{% icon "handoff" %}<span>Handoffs</span></a>
     {% elif user.is_company_supervisor %}
-      <a href="{% url 'dashboard' %}"{% if here == 'dashboard' %} aria-current="page"{% endif %}>Dashboard</a>
-      <a href="{% url 'handoffs' %}"{% if here == 'handoffs' %} aria-current="page"{% endif %}>Handoffs</a>
+      <a href="{% url 'dashboard' %}"{% if here == "dashboard" %} aria-current="page"{% endif %}>{% icon "chart" %}<span>Dashboard</span></a>
+      <a href="{% url 'handoffs' %}"{% if here == "handoffs" %} aria-current="page"{% endif %}>{% icon "handoff" %}<span>Handoffs</span></a>
     {% elif user.is_shop_supervisor %}
-      <a href="{% url 'supervisor_home' %}"{% if here == 'supervisor_home' %} aria-current="page"{% endif %}>My shop</a>
-      <a href="{% url 'record_payment' %}"{% if here == 'record_payment' or here == 'correct_payment' %} aria-current="page"{% endif %}>Record payment</a>
-      <a href="{% url 'handoffs' %}"{% if here == 'handoffs' %} aria-current="page"{% endif %}>Handoff</a>
-      <a href="{% url 'receipts' %}"{% if here == 'receipts' %} aria-current="page"{% endif %}>Receipts</a>
+      <a href="{% url 'supervisor_home' %}"{% if here == "supervisor_home" %} aria-current="page"{% endif %}>{% icon "shop" %}<span>My shop</span></a>
+      <a href="{% url 'record_payment' %}"{% if here == "record_payment" or here == "correct_payment" %} aria-current="page"{% endif %}>{% icon "cash" %}<span>Record<span class="tab-long"> payment</span></span></a>
+      <a href="{% url 'handoffs' %}"{% if here == "handoffs" %} aria-current="page"{% endif %}>{% icon "handoff" %}<span>Handoff</span></a>
+      <a href="{% url 'receipts' %}"{% if here == "receipts" %} aria-current="page"{% endif %}>{% icon "receipt" %}<span>Receipts</span></a>
     {% endif %}
-    {% if user.is_contractor %}<a href="{% url 'my_account' %}"{% if here == 'my_account' or here == 'contractor_account' %} aria-current="page"{% endif %}>My rent</a>{% endif %}
+    {% if user.is_contractor %}<a href="{% url 'my_account' %}"{% if here == "my_account" or here == "contractor_account" %} aria-current="page"{% endif %}>{% icon "wallet" %}<span>My rent</span></a>{% endif %}
   </nav>
   {% endwith %}
   {% endif %}
   <main>
-    {% for m in messages %}<p class="msg {{ m.tags }}">{{ m }}</p>{% endfor %}
+    {% for m in messages %}<p class="msg {{ m.tags }}"{% if m.level_tag == "error" %} role="alert"{% else %} role="status"{% endif %}>{% if m.level_tag == "success" %}{% icon "check" %}{% elif m.level_tag == "error" %}{% icon "alert" %}{% else %}{% icon "info" %}{% endif %}<span>{{ m }}</span></p>{% endfor %}
     {% block content %}{% endblock %}
   </main>
 </body>

@@ -1,11 +1,42 @@
 {% extends "rent/base.html" %}
+{% load ui money %}
+{% block title %}{{ shop.name }} · Campus Cuts Rent{% endblock %}
 {% block content %}
-<h1>{{ shop.name }}</h1>
-<p class="muted">Rent period {{ period }}</p>
-<a class="btn big" href="{% url 'record_payment' %}">{% include "rent/icon.html" with name="cash" %}Record payment</a>
-<div class="table-wrap"><table>
-  <tr><th>Contractor</th><th>Staff ID</th><th>Pays</th><th><span class="sr-only">Action</span></th></tr>
-  {% for c in contractors %}<tr><td>{{ c.full_name }}</td><td>{{ c.staff_id }}</td><td>{{ c.get_pay_type_display }}</td>
-    <td><a class="btn small secondary" href="{% url 'record_payment' %}?contractor={{ c.pk }}">{% include "rent/icon.html" with name="cash" %}Record</a></td></tr>{% endfor %}
-</table></div>
+<header class="page-head">
+  <h1>{{ shop.name }}</h1>
+  <p class="period">{% icon "calendar" %}{{ period }}</p>
+</header>
+
+<dl class="tally">
+  <div><dt>Contractors</dt><dd>{{ rows|length }}</dd></div>
+  <div><dt>Paid this week</dt><dd>{{ paid_count }}</dd></div>
+  <div class="tally-key"><dt>Still to collect</dt><dd>{{ outstanding|money }}</dd></div>
+</dl>
+
+<a class="btn big" href="{% url 'record_payment' %}">{% icon "cash" %}Record payment</a>
+
+<h2 class="with-icon">{% icon "users" %}Contractors</h2>
+{% if rows %}
+<ul class="people">
+  {% for r in rows %}{% with c=r.contractor s=r.summary %}
+  <li class="person{% if r.overdue_total %} is-overdue{% endif %}">
+    <span class="avatar-lg" aria-hidden="true">{{ c.full_name|initials }}</span>
+    <div class="person-main">
+      <strong class="person-name">{{ c.full_name }}</strong>
+      <span class="person-meta">ID {{ c.staff_id }}, {{ c.get_pay_type_display|lower }}</span>
+      <span class="person-status">
+        {% status_badge s.status %}
+        {% if r.overdue_total %}<span class="badge overdue">{% icon "alert" %}{{ r.overdue_total|money }} overdue</span>{% endif %}
+      </span>
+    </div>
+    <div class="person-side">
+      <span class="person-balance">{% if s.balance is None %}<span class="muted">Not set</span>{% else %}{{ s.balance|money }}{% endif %}<small>balance</small></span>
+      <a class="btn small secondary" href="{% url 'record_payment' %}?contractor={{ c.pk }}" aria-label="Record a payment for {{ c.full_name }}">{% icon "cash" %}Record</a>
+    </div>
+  </li>
+  {% endwith %}{% endfor %}
+</ul>
+{% else %}
+<p class="empty">{% icon "users" %}<span>No active contractors in this shop yet. The Owner adds them on the Contractors page.</span></p>
+{% endif %}
 {% endblock %}

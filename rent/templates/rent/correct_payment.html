@@ -1,13 +1,14 @@
 {% extends "rent/base.html" %}
+{% load ui %}
 {% load money %}
 {% block title %}Correct a payment · Campus Cuts Rent{% endblock %}
 {% block content %}
-<a class="muted" href="{% url 'record_payment' %}?contractor={{ payment.contractor.pk }}&period={{ payment.rent_period.pk }}">{% include "rent/icon.html" with name="back" %}Back to {{ payment.contractor.full_name }}</a>
+<a class="muted" href="{% url 'record_payment' %}?contractor={{ payment.contractor.pk }}&period={{ payment.rent_period.pk }}">{% icon "back" %}Back to {{ payment.contractor.full_name }}</a>
 <h1>Correct a payment</h1>
 <p>{{ payment.contractor.full_name }} ({{ payment.contractor.staff_id }}) · {{ payment.rent_period }}</p>
 <p class="muted">Now: {{ payment.amount|money }} paid on {{ payment.payment_date }}. Owed {{ summary.owed|money }}, balance {{ summary.balance|money }}.</p>
 
-{% if error %}<p class="msg error" role="alert" id="form-error">{{ error }}</p>{% endif %}
+{% if error %}<p class="msg error" role="alert" id="form-error">{% icon "alert" %}<span>{{ error }}</span></p>{% endif %}
 
 <form method="post" class="card stack">
   {% csrf_token %}
@@ -22,11 +23,11 @@
   <label>Reason for the correction
     <input name="reason" required maxlength="255"{% if error %} aria-describedby="form-error"{% endif %} placeholder="e.g. Typing error" value="{{ form.reason }}">
   </label>
-  <p class="muted">The original details are kept. Nothing is deleted.</p>
-  <button class="btn big">{% include "rent/icon.html" with name="edit" %}Save correction</button>
+  <p class="note">{% icon "info" %}<span>The original details are kept. Nothing is deleted.</span></p>
+  <button class="btn big">{% icon "edit" %}Save correction</button>
 </form>
 
-<h2>Correction history</h2>
+<h2 class="with-icon">{% icon "history" %}Correction history</h2>
 {% if corrections %}
 <div class="table-wrap"><table>
   <tr><th>When</th><th>Amount</th><th>Date paid</th><th>Reason</th><th>By</th></tr>
@@ -40,5 +41,5 @@
   </tr>
   {% endfor %}
 </table></div>
-{% else %}<p class="muted">This payment has not been corrected.</p>{% endif %}
+{% else %}<p class="empty">{% icon "history" %}<span>This payment has not been corrected.</span></p>{% endif %}
 {% endblock %}
