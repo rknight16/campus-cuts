@@ -3,17 +3,17 @@
 {% load money %}
 {% block title %}Correct a payment · Campus Cuts Rent{% endblock %}
 {% block content %}
-<a class="muted" href="{% url 'record_payment' %}?contractor={{ payment.contractor.pk }}&period={{ payment.rent_period.pk }}">{% icon "back" %}Back to {{ payment.contractor.full_name }}</a>
+<a class="back-link" href="{% url 'record_payment' %}?contractor={{ payment.contractor.pk }}&period={{ payment.rent_period.pk }}">{% icon "back" %}Back to {{ payment.contractor.full_name }}</a>
 <h1>Correct a payment</h1>
 <p>{{ payment.contractor.full_name }} ({{ payment.contractor.staff_id }}) · {{ payment.rent_period }}</p>
-<p class="muted">Now: {{ payment.amount|money }} paid on {{ payment.payment_date }}. Owed {{ summary.owed|money }}, balance {{ summary.balance|money }}.</p>
+<p class="muted">Now: {{ payment.amount|money }} paid on {{ payment.payment_date|date:"j M Y" }}. Owed {{ summary.owed|money }}, balance {{ summary.balance|money }}.</p>
 
 {% if error %}<p class="msg error" role="alert" id="form-error">{% icon "alert" %}<span>{{ error }}</span></p>{% endif %}
 
 <form method="post" class="card stack">
   {% csrf_token %}
   <label>Correct amount ($)
-    <input name="amount" inputmode="decimal" required{% if error %} aria-describedby="form-error"{% endif %}
+    <input name="amount" inputmode="decimal" autocomplete="off" required{% if error %} aria-describedby="form-error"{% endif %}
            value="{% if form %}{{ form.amount }}{% else %}{{ payment.amount|floatformat:'-2' }}{% endif %}">
   </label>
   <label>Correct payment date
@@ -21,7 +21,7 @@
            value="{% if form %}{{ form.payment_date }}{% else %}{{ payment.payment_date|date:'Y-m-d' }}{% endif %}">
   </label>
   <label>Reason for the correction
-    <input name="reason" required maxlength="255"{% if error %} aria-describedby="form-error"{% endif %} placeholder="e.g. Typing error" value="{{ form.reason }}">
+    <input name="reason" autocomplete="off" required maxlength="255"{% if error %} aria-describedby="form-error"{% endif %} placeholder="e.g. Typing error…" value="{{ form.reason }}">
   </label>
   <p class="note">{% icon "info" %}<span>The original details are kept. Nothing is deleted.</span></p>
   <button class="btn big">{% icon "edit" %}Save correction</button>
@@ -30,16 +30,18 @@
 <h2 class="with-icon">{% icon "history" %}Correction history</h2>
 {% if corrections %}
 <div class="table-wrap"><table>
-  <tr><th>When</th><th>Amount</th><th>Date paid</th><th>Reason</th><th>By</th></tr>
+  <thead><tr><th>When</th><th>Amount</th><th>Date paid</th><th>Reason</th><th>By</th></tr></thead>
+  <tbody>
   {% for c in corrections %}
   <tr>
     <td>{{ c.corrected_at|date:"j M Y, g:i a" }}</td>
     <td>{{ c.old_amount|money }} → {{ c.new_amount|money }}</td>
-    <td>{% if c.old_payment_date != c.new_payment_date %}{{ c.old_payment_date }} → {{ c.new_payment_date }}{% else %}{{ c.new_payment_date }}{% endif %}</td>
+    <td>{% if c.old_payment_date != c.new_payment_date %}{{ c.old_payment_date|date:"j M Y" }} → {{ c.new_payment_date|date:"j M Y" }}{% else %}{{ c.new_payment_date|date:"j M Y" }}{% endif %}</td>
     <td>{{ c.reason }}</td>
     <td>{{ c.corrected_by }}</td>
   </tr>
   {% endfor %}
+  </tbody>
 </table></div>
 {% else %}<p class="empty">{% icon "history" %}<span>This payment has not been corrected.</span></p>{% endif %}
 {% endblock %}

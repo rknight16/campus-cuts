@@ -121,6 +121,16 @@ def _owner_expected_amount(period):
     # If no shop handoffs have been confirmed, return 0.00.
     return result["total"] or Decimal("0.00")
 
+def expected_shop_amount(shop, period):
+    """Public read of the AC-2 expected amount, so the form can show it before saving."""
+    return _shop_expected_amount(shop, period)
+
+
+def expected_owner_amount(period):
+    """Public read of the AC-4 expected amount, so the form can show it before saving."""
+    return _owner_expected_amount(period)
+
+
 def record_shop_handoff(*, shop, period, amount, handed_date, handed_by):
     """
     Record cash handed from a Shop Supervisor to the Company Supervisor.

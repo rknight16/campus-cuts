@@ -1,32 +1,49 @@
 {% extends "rent/base.html" %}
-{% load ui %}
+{% load ui money %}
 {% block title %}{{ heading }} · Campus Cuts Rent{% endblock %}
 {% block content %}
 <header class="page-head page-head-split">
   <div>
     <h1>{{ heading }}</h1>
-    <p class="period">{% icon "calendar" %}{{ period }}, {{ shops|length }} shop{{ shops|length|pluralize }}</p>
+    <p class="period">{% icon "calendar" %}{{ period }}, {{ cards|length }} shop{{ cards|length|pluralize }}</p>
   </div>
-  <a class="btn" href="{% url 'dashboard' %}">{% icon "chart" %}Open rent dashboard</a>
+  <a class="btn secondary" href="{% url 'dashboard' %}">{% icon "chart" %}Open rent dashboard</a>
 </header>
 
-{% if shops %}
+{% if waiting_count %}
+<a class="waiting-strip" href="{% url 'handoffs' %}#waiting">
+  {% icon "handoff" %}
+  <span><strong>{{ waiting_count }} handoff{{ waiting_count|pluralize }}</strong> waiting for you to confirm</span>
+  <span class="waiting-go">Confirm{% icon "forward" %}</span>
+</a>
+{% endif %}
+
+<dl class="tally tally-shops">
+  <div><dt>Collected this week</dt><dd>{{ collected|money }}</dd></div>
+  <div><dt>Overdue from earlier weeks</dt><dd>{{ overdue|money }}</dd></div>
+  <div class="tally-key"><dt>Still to collect this week</dt><dd>{{ outstanding|money }}</dd></div>
+</dl>
+
+{% if cards %}
 <ul class="shops">
-  {% for s in shops %}
-  <li class="shop-card">
+  {% for card in cards %}{% with s=card.shop h=card.handoff %}
+  <li class="shop-card{% if card.needs_action %} needs-action{% endif %}">
     <div class="shop-top">
       <span class="shop-icon" aria-hidden="true">{% icon "shop" %}</span>
       <div>
         <h2>{{ s.name }}</h2>
-        <span class="campus">{{ s.get_campus_display }}</span>
+        <span class="campus">{{ s.supervisor.full_name|default:"No Shop Supervisor set" }} · {{ s.active_contractors }} contractor{{ s.active_contractors|pluralize }}</span>
       </div>
     </div>
     <dl class="shop-facts">
-      <div><dt>{% icon "user" %}Shop Supervisor</dt><dd>{{ s.supervisor.full_name|default:"None set" }}</dd></div>
-      <div><dt>{% icon "users" %}Active contractors</dt><dd>{{ s.active_contractors }}</dd></div>
+      <div><dt>{% icon "cash" %}Collected this week</dt><dd>{{ card.collected|money }}</dd></div>
+      <div><dt>{% icon "clock" %}Still to collect</dt><dd>{{ card.outstanding|money }}</dd></div>
+      {% if card.overdue %}<div class="fact-overdue"><dt>{% icon "alert" %}Overdue</dt><dd>{{ card.overdue|money }}</dd></div>{% endif %}
+      <div><dt title="{{ last_period }}">{% icon "handoff" %}Last week's handoff</dt>
+        <dd>{% if h %}{% status_badge h.get_status_display %}{% if h.is_mismatch %} {% status_badge "Mismatch" %}{% endif %}{% else %}<span class="muted">Not handed over</span>{% endif %}</dd></div>
     </dl>
   </li>
-  {% endfor %}
+  {% endwith %}{% endfor %}
 </ul>
 {% else %}
 <p class="empty">{% icon "shop" %}<span>No shops yet.</span></p>
