@@ -20,6 +20,10 @@ STATUS_STYLES = {
     rent_rules.UNPAID: ("unpaid", "circle"),
     rent_rules.AWAITING_EARNINGS: ("awaiting", "clock"),
     "Overdue": ("overdue", "alert"),
+    # Handoffs (US-03)
+    "Awaiting confirmation": ("awaiting", "clock"),
+    "Confirmed": ("paid", "check"),
+    "Mismatch": ("overdue", "alert"),
 }
 
 

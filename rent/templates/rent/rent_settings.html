@@ -1,68 +1,64 @@
 {% extends "rent/base.html" %}
+{% load ui money %}
+{% block title %}Weekly rent · Campus Cuts Rent{% endblock %}
 {% block content %}
-<h1>Weekly rent settings</h1>
-<p>
-  A change starts from the next rent period ({{ next_period }}).
-  Earlier rent periods keep the rent that applied to them.
-</p>
+<header class="page-head">
+  <h1>Weekly rent settings</h1>
+  <p class="period">{% icon "calendar" %}Changes start {{ next_period.start_date|date:"j M Y" }}</p>
+</header>
 
 {% if saved %}
-  <p role="status"><strong>Save Successful</strong><br>
-    {{ saved.shop }}: ${{ saved.weekly_rent|floatformat:"2g" }} due every {{ saved.get_due_day_display }},
-    starting {{ saved.effective_from.start_date|date:"j M Y" }}.</p>
+  <p class="msg success" role="status">{% icon "check" %}<span><strong>Save Successful</strong><br>
+    {{ saved.shop }}: {{ saved.weekly_rent|money }} due every {{ saved.get_due_day_display }},
+    starting {{ saved.effective_from.start_date|date:"j M Y" }}.</span></p>
 {% endif %}
 {% if error %}
-  <p role="alert"><strong>{{ error }}</strong> Nothing was saved.</p>
+  <p class="msg error" role="alert" id="form-error">{% icon "alert" %}<span><strong>{{ error }}</strong> Nothing was saved.</span></p>
 {% endif %}
 
-<form method="post">
+<form method="post" class="card stack">
   {% csrf_token %}
-  <p>
-    <label for="shop">Shop</label><br>
-    <select name="shop" id="shop">
-      <option value="">-- Select a shop --</option>
+  <label>Shop
+    <select name="shop" required{% if error %} aria-describedby="form-error"{% endif %}>
+      <option value="">Choose a shop</option>
       {% for shop in shops %}
         <option value="{{ shop.pk }}" {% if posted.shop == shop.pk|stringformat:"d" %}selected{% endif %}>{{ shop }}</option>
       {% endfor %}
     </select>
-  </p>
-  <p>
-    <label for="weekly_rent">Weekly rent ($)</label><br>
-    <input type="text" inputmode="decimal" name="weekly_rent" id="weekly_rent"
-           autocomplete="off" value="{{ posted.weekly_rent }}">
-  </p>
-  <p>
-    <label for="due_day">Due day</label><br>
-    <select name="due_day" id="due_day">
-      <option value="">-- Select a day --</option>
+  </label>
+  <label>Weekly rent ($)
+    <input type="text" inputmode="decimal" name="weekly_rent" autocomplete="off" placeholder="e.g. 15000"
+           value="{{ posted.weekly_rent }}"{% if error %} aria-describedby="form-error"{% endif %}>
+  </label>
+  <label>Due day
+    <select name="due_day"{% if error %} aria-describedby="form-error"{% endif %}>
+      <option value="">Choose a day</option>
       {% for value, label in weekdays %}
         <option value="{{ value }}" {% if posted.due_day == value|stringformat:"d" %}selected{% endif %}>{{ label }}</option>
       {% endfor %}
     </select>
-  </p>
-  <p><button type="submit">Save</button></p>
+  </label>
+  <p class="note">{% icon "info" %}<span>A change starts from the next rent period ({{ next_period }}). Earlier rent periods keep the rent that applied to them.</span></p>
+  <button class="btn big">{% icon "calendar" %}Save rent</button>
 </form>
 
-<h2>Current rent</h2>
-<table>
+<h2 class="with-icon">{% icon "shop" %}Current rent</h2>
+<div class="table-wrap"><table>
   <thead>
-    <tr><th>Shop</th><th>Rent now</th><th>Due day</th><th>From {{ next_period.start_date|date:"j M Y" }}</th></tr>
+    <tr><th>Shop</th><th>Now</th><th>From {{ next_period.start_date|date:"j M" }}</th></tr>
   </thead>
   <tbody>
     {% for row in rows %}
       <tr>
         <td>{{ row.shop }}</td>
-        {% if row.now %}
-          <td>${{ row.now.weekly_rent|floatformat:"2g" }}</td>
-          <td>{{ row.now.get_due_day_display }}</td>
+        <td>{% if row.now %}<strong>{{ row.now.weekly_rent|money }}</strong><small class="due">Due {{ row.now.get_due_day_display }}</small>{% else %}<span class="muted">Not set</span>{% endif %}</td>
+        {% if row.upcoming %}
+          <td class="rent-change"><strong>{{ row.upcoming.weekly_rent|money }}</strong><small class="due">Due {{ row.upcoming.get_due_day_display }}</small></td>
         {% else %}
-          <td colspan="2">Not set</td>
+          <td class="muted">No change</td>
         {% endif %}
-        <td>
-          {% if row.upcoming %}${{ row.upcoming.weekly_rent|floatformat:"2g" }}, due {{ row.upcoming.get_due_day_display }}{% else %}No change{% endif %}
-        </td>
       </tr>
     {% endfor %}
   </tbody>
-</table>
+</table></div>
 {% endblock %}
