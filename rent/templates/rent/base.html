@@ -18,18 +18,25 @@
   </header>
   <div class="checker"></div>
   {% if user.is_authenticated %}
-  <nav class="tabs">
+  {% with here=request.resolver_match.url_name %}
+  <nav class="tabs" aria-label="Main">
     {% if user.is_owner %}
-      <a href="{% url 'dashboard' %}">Dashboard</a><a href="{% url 'contractors' %}">Contractors</a>
-      <a href="{% url 'rent_settings' %}">Rent</a><a href="{% url 'handoffs' %}">Handoffs</a>
+      <a href="{% url 'dashboard' %}"{% if here == 'dashboard' %} aria-current="page"{% endif %}>Dashboard</a>
+      <a href="{% url 'contractors' %}"{% if here == 'contractors' %} aria-current="page"{% endif %}>Contractors</a>
+      <a href="{% url 'rent_settings' %}"{% if here == 'rent_settings' %} aria-current="page"{% endif %}>Rent</a>
+      <a href="{% url 'handoffs' %}"{% if here == 'handoffs' %} aria-current="page"{% endif %}>Handoffs</a>
     {% elif user.is_company_supervisor %}
-      <a href="{% url 'dashboard' %}">Dashboard</a><a href="{% url 'handoffs' %}">Handoffs</a>
+      <a href="{% url 'dashboard' %}"{% if here == 'dashboard' %} aria-current="page"{% endif %}>Dashboard</a>
+      <a href="{% url 'handoffs' %}"{% if here == 'handoffs' %} aria-current="page"{% endif %}>Handoffs</a>
     {% elif user.is_shop_supervisor %}
-      <a href="{% url 'supervisor_home' %}">My shop</a><a href="{% url 'record_payment' %}">Record payment</a>
-      <a href="{% url 'handoffs' %}">Handoff</a><a href="{% url 'receipts' %}">Receipts</a>
+      <a href="{% url 'supervisor_home' %}"{% if here == 'supervisor_home' %} aria-current="page"{% endif %}>My shop</a>
+      <a href="{% url 'record_payment' %}"{% if here == 'record_payment' or here == 'correct_payment' %} aria-current="page"{% endif %}>Record payment</a>
+      <a href="{% url 'handoffs' %}"{% if here == 'handoffs' %} aria-current="page"{% endif %}>Handoff</a>
+      <a href="{% url 'receipts' %}"{% if here == 'receipts' %} aria-current="page"{% endif %}>Receipts</a>
     {% endif %}
-    {% if user.is_contractor %}<a href="{% url 'my_account' %}">My rent</a>{% endif %}
+    {% if user.is_contractor %}<a href="{% url 'my_account' %}"{% if here == 'my_account' or here == 'contractor_account' %} aria-current="page"{% endif %}>My rent</a>{% endif %}
   </nav>
+  {% endwith %}
   {% endif %}
   <main>
     {% for m in messages %}<p class="msg {{ m.tags }}">{{ m }}</p>{% endfor %}

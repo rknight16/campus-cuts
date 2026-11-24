@@ -3,9 +3,9 @@
 <h1>{{ shop.name }}</h1>
 <p class="muted">Rent period {{ period }}</p>
 <a class="btn big" href="{% url 'record_payment' %}">{% include "rent/icon.html" with name="cash" %}Record payment</a>
-<table>
-  <tr><th>Contractor</th><th>Staff ID</th><th>Pays</th><th></th></tr>
+<div class="table-wrap"><table>
+  <tr><th>Contractor</th><th>Staff ID</th><th>Pays</th><th><span class="sr-only">Action</span></th></tr>
   {% for c in contractors %}<tr><td>{{ c.full_name }}</td><td>{{ c.staff_id }}</td><td>{{ c.get_pay_type_display }}</td>
     <td><a class="btn small secondary" href="{% url 'record_payment' %}?contractor={{ c.pk }}">{% include "rent/icon.html" with name="cash" %}Record</a></td></tr>{% endfor %}
-</table>
+</table></div>
 {% endblock %}

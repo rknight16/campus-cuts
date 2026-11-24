@@ -7,20 +7,20 @@
 <p>{{ payment.contractor.full_name }} ({{ payment.contractor.staff_id }}) · {{ payment.rent_period }}</p>
 <p class="muted">Now: {{ payment.amount|money }} paid on {{ payment.payment_date }}. Owed {{ summary.owed|money }}, balance {{ summary.balance|money }}.</p>
 
-{% if error %}<p class="msg error" role="alert">{{ error }}</p>{% endif %}
+{% if error %}<p class="msg error" role="alert" id="form-error">{{ error }}</p>{% endif %}
 
 <form method="post" class="card stack">
   {% csrf_token %}
   <label>Correct amount ($)
-    <input name="amount" inputmode="decimal" required
+    <input name="amount" inputmode="decimal" required{% if error %} aria-describedby="form-error"{% endif %}
            value="{% if form %}{{ form.amount }}{% else %}{{ payment.amount|floatformat:'-2' }}{% endif %}">
   </label>
   <label>Correct payment date
-    <input type="date" name="payment_date" required max="{{ today|date:'Y-m-d' }}"
+    <input type="date" name="payment_date" required{% if error %} aria-describedby="form-error"{% endif %} max="{{ today|date:'Y-m-d' }}"
            value="{% if form %}{{ form.payment_date }}{% else %}{{ payment.payment_date|date:'Y-m-d' }}{% endif %}">
   </label>
   <label>Reason for the correction
-    <input name="reason" required maxlength="255" placeholder="e.g. Typing error" value="{{ form.reason }}">
+    <input name="reason" required maxlength="255"{% if error %} aria-describedby="form-error"{% endif %} placeholder="e.g. Typing error" value="{{ form.reason }}">
   </label>
   <p class="muted">The original details are kept. Nothing is deleted.</p>
   <button class="btn big">{% include "rent/icon.html" with name="edit" %}Save correction</button>
