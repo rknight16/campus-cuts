@@ -8,7 +8,7 @@ from decimal import Decimal
 
 from django.test import TestCase
 
-from rent.models import CommissionEarning, PayType, Payment, RentSetting, Weekday
+from rent.models import CommissionEarning, PayType, Payment, RentPeriod, RentSetting, Weekday
 from rent.services import rent_rules
 
 from .helpers import make_world
@@ -127,7 +127,8 @@ class OverdueTests(TestCase):
 
     def test_paid_in_full_is_not_overdue(self):
         pay(self.w, 15000)
-        self.assertEqual(rent_rules.overdue_periods(self.w.taylor_c, today=date(2026, 11, 20)), [])
+        # 13 Nov is the next week's due day, so that week is not overdue yet either
+        self.assertEqual(rent_rules.overdue_periods(self.w.taylor_c, today=date(2026, 11, 13)), [])
 
     def test_several_periods_oldest_first(self):
         nxt = self.w.period.next()  # 9 to 15 Nov, due 13 Nov
@@ -137,8 +138,30 @@ class OverdueTests(TestCase):
     def test_default_today_is_local_date(self):
         # Without `today` it uses timezone.localdate(); passing that in gives the same answer.
         from django.utils import timezone
-        self.assertEqual(rent_rules.overdue_periods(self.w.taylor_c),
-                         rent_rules.overdue_periods(self.w.taylor_c, today=timezone.localdate()))
+
+        def weeks(result):  # unsaved weeks are new objects each call, so compare by date and amount
+            return [(p.start_date, owing) for p, owing in result]
+        self.assertEqual(weeks(rent_rules.overdue_periods(self.w.taylor_c)),
+                         weeks(rent_rules.overdue_periods(self.w.taylor_c, today=timezone.localdate())))
+
+    def test_week_nobody_opened_still_counts(self):
+        """No RentPeriod row exists for 9 to 15 Nov, but its unpaid rent is still overdue on 14 Nov."""
+        pay(self.w, 15000)
+        result = rent_rules.overdue_periods(self.w.taylor_c, today=date(2026, 11, 14))
+        self.assertEqual([(p.start_date, owing) for p, owing in result], [(date(2026, 11, 9), Decimal("15000"))])
+        self.assertFalse(RentPeriod.objects.filter(start_date=date(2026, 11, 9)).exists())  # nothing saved
+
+    def test_no_overdue_before_the_contractor_joined(self):
+        """Joined Wednesday 11 Nov: the 2 to 8 Nov week is not theirs, only 9 to 15 Nov is."""
+        self.w.taylor_c.joined_on = date(2026, 11, 11)
+        self.w.taylor_c.save()
+        result = rent_rules.overdue_periods(self.w.taylor_c, today=date(2026, 11, 14))
+        self.assertEqual([p.start_date for p, _ in result], [date(2026, 11, 9)])
+
+    def test_commission_week_without_earnings_is_not_overdue(self):
+        self.w.taylor_c.pay_type = PayType.COMMISSION
+        self.w.taylor_c.save()
+        self.assertEqual(rent_rules.overdue_periods(self.w.taylor_c, today=date(2026, 11, 14)), [])
 
 
 class SeedOverdueTests(TestCase):

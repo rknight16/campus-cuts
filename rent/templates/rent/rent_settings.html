@@ -27,11 +27,11 @@
     </select>
   </label>
   <label>Weekly rent ($)
-    <input type="text" inputmode="decimal" name="weekly_rent" autocomplete="off" placeholder="e.g. 15000"
+    <input type="text" inputmode="decimal" name="weekly_rent" autocomplete="off" required placeholder="e.g. 15000…"
            value="{{ posted.weekly_rent }}"{% if error %} aria-describedby="form-error"{% endif %}>
   </label>
   <label>Due day
-    <select name="due_day"{% if error %} aria-describedby="form-error"{% endif %}>
+    <select name="due_day" required{% if error %} aria-describedby="form-error"{% endif %}>
       <option value="">Choose a day</option>
       {% for value, label in weekdays %}
         <option value="{{ value }}" {% if posted.due_day == value|stringformat:"d" %}selected{% endif %}>{{ label }}</option>

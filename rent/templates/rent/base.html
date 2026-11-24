@@ -5,9 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#000000">
   <title>{% block title %}Campus Cuts Rent{% endblock %}</title>
+  <link rel="preload" href="{% static 'fonts/zilla-slab-700-latin.woff2' %}" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="{% static 'css/campuscuts.css' %}">
+  <script src="{% static 'js/campuscuts.js' %}" defer></script>
+  {# A page-to-page transition skipped by a quick second click rejects its promises; that is expected, so keep it out of the console. #}
+  <script>for(const t of["pageswap","pagereveal"])addEventListener(t,e=>{const v=e.viewTransition;if(v)for(const p of[v.ready,v.finished,v.updateCallbackDone])p.catch(()=>{})})</script>
 </head>
-<body class="{% block body_class %}{% if user.is_authenticated %}has-nav{% endif %}{% endblock %}">
+<body class="{% block body_class %}{% if user.is_authenticated and user.role != "CONTRACTOR" %}has-nav{% endif %}{% endblock %}">
+  <a class="skip" href="#main">Skip to content</a>
   {% include "rent/icon_sprite.html" %}
   {% block chrome %}
   <header class="topbar">
@@ -28,13 +33,14 @@
   <div class="gold-rule"></div>
   <div class="checker"></div>
   {% endblock %}
-  {% if user.is_authenticated %}
+  {# A plain contractor only has My rent, so a one-tab bar is left out. #}
+  {% if user.is_authenticated and user.role != "CONTRACTOR" %}
   {% with here=request.resolver_match.url_name %}
   <nav class="tabs" aria-label="Main">
     {% if user.is_owner %}
       <a href="{% url 'dashboard' %}"{% if here == "dashboard" %} aria-current="page"{% endif %}>{% icon "chart" %}<span>Dashboard</span></a>
       <a href="{% url 'contractors' %}"{% if here == "contractors" or here == "contractor_account" %} aria-current="page"{% endif %}>{% icon "users" %}<span>Contractors</span></a>
-      <a href="{% url 'rent_settings' %}"{% if here == "rent_settings" %} aria-current="page"{% endif %}>{% icon "calendar" %}<span>Rent</span></a>
+      <a href="{% url 'rent_settings' %}"{% if here == "rent_settings" %} aria-current="page"{% endif %}>{% icon "calendar" %}<span>Rent<span class="tab-long"> settings</span></span></a>
       <a href="{% url 'handoffs' %}"{% if here == "handoffs" %} aria-current="page"{% endif %}>{% icon "handoff" %}<span>Handoffs</span></a>
     {% elif user.is_company_supervisor %}
       <a href="{% url 'dashboard' %}"{% if here == "dashboard" %} aria-current="page"{% endif %}>{% icon "chart" %}<span>Dashboard</span></a>
@@ -42,14 +48,14 @@
     {% elif user.is_shop_supervisor %}
       <a href="{% url 'supervisor_home' %}"{% if here == "supervisor_home" %} aria-current="page"{% endif %}>{% icon "shop" %}<span>My shop</span></a>
       <a href="{% url 'record_payment' %}"{% if here == "record_payment" or here == "correct_payment" %} aria-current="page"{% endif %}>{% icon "cash" %}<span>Record<span class="tab-long"> payment</span></span></a>
-      <a href="{% url 'handoffs' %}"{% if here == "handoffs" %} aria-current="page"{% endif %}>{% icon "handoff" %}<span>Handoff</span></a>
+      <a href="{% url 'handoffs' %}"{% if here == "handoffs" %} aria-current="page"{% endif %}>{% icon "handoff" %}<span>Handoffs</span></a>
       <a href="{% url 'receipts' %}"{% if here == "receipts" %} aria-current="page"{% endif %}>{% icon "receipt" %}<span>Receipts</span></a>
     {% endif %}
     {% if user.is_contractor %}<a href="{% url 'my_account' %}"{% if here == "my_account" or here == "contractor_account" %} aria-current="page"{% endif %}>{% icon "wallet" %}<span>My rent</span></a>{% endif %}
   </nav>
   {% endwith %}
   {% endif %}
-  <main>
+  <main id="main" tabindex="-1">
     {% for m in messages %}<p class="msg {{ m.tags }}"{% if m.level_tag == "error" %} role="alert"{% else %} role="status"{% endif %}>{% if m.level_tag == "success" %}{% icon "check" %}{% elif m.level_tag == "error" %}{% icon "alert" %}{% else %}{% icon "info" %}{% endif %}<span>{{ m }}</span></p>{% endfor %}
     {% block content %}{% endblock %}
   </main>

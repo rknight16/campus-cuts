@@ -1,11 +1,13 @@
 """Home pages: after login each role lands on its own page (SDS 2.3.1)."""
+from datetime import timedelta
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
 from django.shortcuts import redirect, render
 
 from rent.access import contractors_visible_to, role_required
-from rent.models import Role, RentPeriod, Shop
+from rent.models import Handoff, HandoffStatus, HandoffStep, Role, RentPeriod, Shop
 from rent.services import rent_settings
 from rent.services import rent_rules
 
@@ -34,13 +36,58 @@ def home(request):
     }[request.user.role])
 
 
+def waiting_handoffs(user):
+    """Handoffs this user still has to confirm: shop handoffs for the Company Supervisor,
+    the Company Supervisor's handoff for the Owner."""
+    step = {Role.COMPANY_SUPERVISOR: HandoffStep.SHOP_TO_COMPANY, Role.OWNER: HandoffStep.COMPANY_TO_OWNER}.get(user.role)
+    if step is None:
+        return Handoff.objects.none()
+    return Handoff.objects.filter(step=step, status=HandoffStatus.AWAITING)
+
+
+def shop_cards(shops, period, last_period, user, today=None):
+    """Each shop's week in money, plus last week's handoff, so the home page answers "is the money in?".
+
+    Collected and still-to-collect are for this week; overdue is anything older still owed.
+    Last week's handoff is shown because cash is usually handed over after the week ends.
+    """
+    handoffs = {h.shop_id: h for h in Handoff.objects.filter(step=HandoffStep.SHOP_TO_COMPANY, rent_period=last_period)}
+    cards = []
+    for shop in shops:
+        collected = outstanding = overdue = rent_rules.ZERO
+        for contractor in shop.contractors.filter(is_active=True):
+            week = rent_rules.summary(contractor, period)
+            collected += week["paid"]
+            outstanding += week["balance"] or rent_rules.ZERO
+            overdue += sum((owing for _, owing in rent_rules.overdue_periods(contractor, today)), rent_rules.ZERO)
+        handoff = handoffs.get(shop.pk)
+        cards.append({
+            "shop": shop,
+            "collected": collected,
+            "outstanding": outstanding,
+            "overdue": overdue,
+            "handoff": handoff,
+            "needs_action": (handoff is not None and handoff.status == HandoffStatus.AWAITING
+                             and user.role == Role.COMPANY_SUPERVISOR),
+        })
+    return cards
+
+
 def _shops_page(request, heading):
     shops = Shop.objects.select_related("supervisor").annotate(
         active_contractors=Count("contractors", filter=Q(contractors__is_active=True)))
+    period = RentPeriod.current()
+    last_period = RentPeriod.for_date(period.start_date - timedelta(days=7))
+    cards = shop_cards(shops, period, last_period, request.user)
     return render(request, "rent/home_shops.html", {
         "heading": heading,
-        "shops": shops,
-        "period": RentPeriod.current(),
+        "cards": cards,
+        "period": period,
+        "last_period": last_period,
+        "waiting_count": waiting_handoffs(request.user).count(),
+        "collected": sum((c["collected"] for c in cards), rent_rules.ZERO),
+        "outstanding": sum((c["outstanding"] for c in cards), rent_rules.ZERO),
+        "overdue": sum((c["overdue"] for c in cards), rent_rules.ZERO),
     })
 
 

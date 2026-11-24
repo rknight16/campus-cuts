@@ -1,28 +1,77 @@
 {% extends "rent/base.html" %}
-{% load humanize ui %}
+{% load ui money %}
+{% block title %}My rent · Campus Cuts Rent{% endblock %}
 {% block content %}
-<h1>My rent</h1>
-<p>{{ contractor.full_name }} · {{ contractor.staff_id }} · {{ contractor.shop }}</p>
-<p class="muted">Rent period {{ period }}</p>
-<p class="todo">US-06 (Raynardo): owed, paid, balance, due date, status and overdue go here.</p>
-<h2 class="with-icon">{% icon "history" %}Payment history</h2>
-{% if payments %}
-<table>
-  <tr><th>Rent period</th><th>Amount</th><th>Paid on</th><th>Receipt</th></tr>
-  {% for p in payments %}
-  <tr>
-    <td>{{ p.rent_period }}</td>
-    <td>${{ p.amount|floatformat:0|intcomma }}</td>
-    <td>{{ p.payment_date }}</td>
-    <td>
-      {% for r in p.receipts.all %}
-        <a href="{% url 'receipt_detail' r.pk %}">{{ r.number }}</a>{% if r.is_corrected %} (Corrected){% endif %}{% if not forloop.last %}, {% endif %}
-      {% empty %}
-        -
+<header class="page-head">
+  <h1>My rent</h1>
+  <p class="period">{% icon "shop" %}{{ contractor.shop }} · Staff ID {{ contractor.staff_id }}</p>
+</header>
+
+{# AC-1: this week's rent #}
+<section class="balance-panel" aria-labelledby="this-week">
+  <div class="balance-who">
+    <h2 id="this-week">This week</h2>
+    <p>{% icon "calendar" %}{{ rent.period }}</p>
+  </div>
+  {% if rent.owed is None %}
+    <p class="balance-sub">{% if rent.status == "Earnings not entered" %}Your Shop Supervisor has not entered this week's earnings yet. What you owe (40% of your earnings) shows here once they do.{% else %}No weekly rent is set for your shop yet.{% endif %}</p>
+  {% else %}
+    <div class="balance-main">
+      <div>
+        <span class="balance-label">Balance</span>
+        <strong class="balance-figure">{{ rent.balance|money }}</strong>
+      </div>
+      {% status_badge rent.status %}
+    </div>
+    {% percent rent.paid rent.owed as pct %}
+    <div class="progress" aria-hidden="true"><span style="width:{{ pct }}%"></span></div>
+    <p class="balance-sub">Paid <strong>{{ rent.paid|money }}</strong> of <strong>{{ rent.owed|money }}</strong> owed</p>
+    {% if rent.due_date %}
+    <p class="balance-due">{% icon "clock" %}{% if rent.balance and rent.due_passed %}Was due{% else %}Due{% endif %} <strong>{{ rent.due_date|date:"l j M" }}</strong></p>
+    {% endif %}
+  {% endif %}
+</section>
+
+{# AC-2: overdue, with $0 shown when nothing is (UC-06 A1) #}
+<section aria-labelledby="overdue">
+  <h2 class="with-icon" id="overdue">{% icon "alert" %}Overdue</h2>
+  {% if rent.overdue %}
+    <p class="overdue-total"><span>Total overdue</span><strong>{{ rent.overdue_total|money }}</strong></p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Rent period</th><th>Was due</th><th>Owed</th></tr></thead>
+      <tbody>
+        {% for row in rent.overdue %}
+        <tr><td>{{ row.period }}</td><td>{{ row.due_date|date:"j M Y" }}</td><td><strong>{{ row.balance|money }}</strong></td></tr>
+        {% endfor %}
+      </tbody>
+    </table></div>
+    <p class="note">{% icon "info" %}<span>Pay your Shop Supervisor and they will record it here.</span></p>
+  {% else %}
+    <p class="msg success" role="status">{% icon "check" %}<span><strong>$0 overdue.</strong> You are up to date.</span></p>
+  {% endif %}
+</section>
+
+{# AC-3: payment history, newest first #}
+<section aria-labelledby="history">
+  <h2 class="with-icon" id="history">{% icon "history" %}Payment history</h2>
+  {% if payments %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Rent period</th><th>Amount</th><th>Paid on</th>{% if has_receipts %}<th>Receipt</th>{% endif %}</tr></thead>
+    <tbody>
+      {% for p in payments %}
+      <tr>
+        <td>{{ p.rent_period }}</td>
+        <td>{{ p.amount|money }}{% if p.corrections.all %} <span class="badge corrected">{% icon "edit" %}Corrected</span>{% endif %}</td>
+        <td>{{ p.payment_date|date:"j M Y" }}</td>
+        {% if has_receipts %}{# US-07: turn the number into a link once the receipt page exists #}
+        <td>{% with r=p.receipts.all.0 %}{% if r %}<a href="{% url 'receipt_detail' r.pk %}">No. {{ r.number }}</a>{% else %}<span class="muted">None</span>{% endif %}{% endwith %}</td>
+        {% endif %}
+      </tr>
       {% endfor %}
-    </td>
-  </tr>
-  {% endfor %}
-</table>
-{% else %}<p class="empty">{% icon "receipt" %}<span>No payments recorded yet.</span></p>{% endif %}
+    </tbody>
+  </table></div>
+  {% else %}
+  <p class="empty">{% icon "receipt" %}<span>No payments have been recorded for you yet.</span></p>
+  {% endif %}
+</section>
 {% endblock %}

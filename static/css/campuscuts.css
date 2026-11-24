@@ -16,27 +16,42 @@
      Roboto Condensed (Android). */
   --font-display:"Bahnschrift","DIN Alternate","DIN Condensed","Roboto Condensed","Arial Narrow",system-ui,sans-serif;
   --font-body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  /* The shop sign's lettering: a wide slab serif with ball terminals. Zilla Slab (SIL OFL), self-hosted in static/fonts. */
+  --font-serif:"Zilla Slab",Rockwell,"Roboto Slab",Georgia,serif;
+  /* The sign's bezel: a ring of dots around a thin inner ring. Drawn on the round black badges. */
+  --bezel:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='17.6' fill='none' stroke='white' stroke-width='1.7' stroke-linecap='round' stroke-dasharray='0 3.456'/%3E%3Ccircle cx='20' cy='20' r='14.6' fill='none' stroke='white' stroke-opacity='.55' stroke-width='.7'/%3E%3C/svg%3E");
   /* Scale (about 1.25): 13 / 15 / 17 / 21 / 26 / 34 / 44 */
   --fs-xs:13px;--fs-sm:15px;--fs-base:17px;--fs-h3:21px;--fs-h2:26px;--fs-h1:34px;--fs-hero:44px;
 }
+@font-face{font-family:"Zilla Slab";font-style:normal;font-weight:500;font-display:swap;src:url("../fonts/zilla-slab-500-latin.woff2") format("woff2")}
+@font-face{font-family:"Zilla Slab";font-style:normal;font-weight:700;font-display:swap;src:url("../fonts/zilla-slab-700-latin.woff2") format("woff2")}
 *{box-sizing:border-box}
 body{margin:0;font-family:var(--font-body);color:var(--ink);background:var(--white);font-size:var(--fs-base);line-height:1.5}
-h1,h2,h3,.brand-name,.balance-figure,.tally dd,.person-balance{font-family:var(--font-display);font-weight:700;line-height:1.1}
+/* Type roles: serif = the shop's voice (brand, page and card titles); condensed display = money and counts; system = everything else. */
+h1,h2,h3,.brand-name{font-family:var(--font-serif);font-weight:700;line-height:1.1}
+.balance-figure,.tally dd,.person-balance{font-family:var(--font-display);font-weight:700;line-height:1.1}
 h1{font-size:var(--fs-h1)}
 h2{font-size:var(--fs-h2)}
 h3{font-size:var(--fs-h3)}
 @media(min-width:620px){h1{font-size:var(--fs-hero)}}
 td,.tally dd,.person-balance,.balance-panel{font-variant-numeric:tabular-nums}
-:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+:focus-visible{outline:3px solid var(--focus,var(--black));outline-offset:2px}
+/* Dark surfaces switch the focus ring to gold (black would vanish there) */
+.topbar,.balance-panel,.handoff.needs-action .handoff-head,body.login-page{--focus:var(--gold)}
+.login-card{--focus:var(--black)}
+::selection{background:var(--gold);color:var(--black)}
+input,select{caret-color:var(--black);accent-color:var(--black)}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 
 /* Header: brand lockup, gold rule, ID-card checker band */
 .topbar{background:var(--black);color:var(--white);display:flex;justify-content:space-between;align-items:center;padding:10px 16px;gap:12px}
 .brand{display:flex;align-items:center;gap:10px;color:var(--white);text-decoration:none;min-height:var(--tap)}
-.brand-mark{width:36px;height:36px;border-radius:50%;background:var(--gold);color:var(--black);display:grid;place-items:center;flex:none}
-.brand-mark .icon{width:20px;height:20px;margin:0}
-.brand-name{font-size:21px;letter-spacing:.12em;line-height:1}
-.brand-name small{display:block;font-size:11px;font-weight:600;letter-spacing:.2em;color:var(--gold);margin-top:4px}
+/* Round badges are small copies of the shop sign: black disc, dotted rim, gold mark */
+.brand-mark,.shop-icon,.avatar-lg{border-radius:50%;background:var(--bezel) center/100% no-repeat,var(--black);color:var(--gold);display:grid;place-items:center;flex:none}
+.brand-mark{width:40px;height:40px}
+.brand-mark .icon{width:16px;height:16px;margin:0}
+.brand-name{font-size:22px;font-weight:500;letter-spacing:.1em;line-height:1}
+.brand-name small{display:block;font-family:var(--font-body);font-size:11px;font-weight:600;letter-spacing:.2em;color:var(--gold);margin-top:4px}
 .who{display:flex;gap:10px;align-items:center;font-size:14px;min-width:0}
 .avatar{width:36px;height:36px;border-radius:50%;border:2px solid var(--gold);display:grid;place-items:center;font-weight:800;font-size:14px;flex:none}
 .who-text{display:flex;flex-direction:column;line-height:1.25;min-width:0}
@@ -53,23 +68,25 @@ td,.tally dd,.person-balance,.balance-panel{font-variant-numeric:tabular-nums}
 
 /* Nav: tab row on wider screens, fixed bottom bar on phones */
 .tabs{display:flex;gap:4px;border-bottom:2px solid var(--black);padding:0 8px;overflow-x:auto}
-.tabs a{display:flex;align-items:center;gap:8px;padding:12px 14px;color:var(--black);text-decoration:none;font-weight:600;white-space:nowrap;border-bottom:4px solid transparent;margin-bottom:-2px}
+.tabs a{position:relative;display:flex;align-items:center;gap:8px;padding:12px 14px;color:var(--black);text-decoration:none;font-weight:600;white-space:nowrap;border-bottom:4px solid transparent;margin-bottom:-2px}
 .tabs a .icon{margin:0}
 .tabs a:hover{border-bottom-color:var(--rule)}
-.tabs a[aria-current="page"]{border-bottom-color:var(--gold)}
+.tabs a[aria-current="page"],.tabs a[aria-current="page"]:hover{border-bottom-color:transparent}
+.tabs a[aria-current="page"]::after{content:"";position:absolute;left:0;right:0;bottom:-4px;height:4px;background:var(--gold);view-transition-name:tab-ink}
 @media(max-width:619px){
   body.has-nav{padding-bottom:calc(var(--bottom-nav) + env(safe-area-inset-bottom))}
-  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--black);border:0;border-top:3px solid var(--gold);padding:0 0 env(safe-area-inset-bottom);gap:0;overflow:visible}
+  .tabs{--focus:var(--gold);position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--black);border:0;border-top:3px solid var(--gold);padding:0 0 env(safe-area-inset-bottom);gap:0;overflow:visible}
   .tabs a{flex:1 1 0;min-width:0;flex-direction:column;justify-content:center;gap:4px;height:var(--bottom-nav);padding:6px 2px;color:var(--white);font-size:12px;border:0;margin:0;text-align:center}
   .tabs a>span{max-width:100%;overflow:hidden;text-overflow:ellipsis}
   .tab-long{display:none}
   .tabs a .icon{width:24px;height:24px}
   .tabs a:hover{border:0}
-  .tabs a[aria-current="page"]{color:var(--gold);box-shadow:inset 0 3px 0 var(--gold)}
+  .tabs a[aria-current="page"]{color:var(--gold)}
+  .tabs a[aria-current="page"]::after{top:0;bottom:auto;height:3px}
 }
 
 main{max-width:900px;margin:0 auto;padding:16px}
-h1{margin:.3em 0;letter-spacing:-.01em}
+h1{margin:.3em 0}
 .muted{color:var(--ink-muted)}
 .card{border:2px solid var(--black);border-radius:var(--radius);padding:20px}
 .narrow{max-width:380px;margin:40px auto}
@@ -79,7 +96,7 @@ input,select{display:block;width:100%;padding:12px;font-size:17px;border:2px sol
 table{width:100%;border-collapse:collapse;margin:12px 0}
 th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--rule)}
 th{border-bottom:2px solid var(--black)}
-.msg{padding:10px 12px;border-radius:var(--radius-sm);border:2px solid var(--black);border-left:6px solid var(--gold)}
+.msg{padding:10px 12px;border-radius:var(--radius-sm);border:2px solid var(--black)}
 .msg.error{background:var(--black);color:var(--white)}
 .todo{border:2px dashed #888;padding:12px;border-radius:var(--radius-sm);color:#444}
 /* US-01 payment pages */
@@ -120,7 +137,7 @@ h2,h3{margin:1.2em 0 .4em}
 .balance-who h2{margin:0;font-size:24px}
 .balance-who p{margin:4px 0 0;color:var(--gold);font-size:15px}
 .balance-who .icon{width:16px;height:16px;vertical-align:-2px;margin-right:6px}
-.balance-main{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-top:18px;padding-top:16px;border-top:1px solid #333}
+.balance-main{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-top:18px;padding-top:16px;background:radial-gradient(circle,#777 1.1px,transparent 1.6px) 0 0/7px 3px repeat-x}
 .balance-label{display:block;font-size:15px;color:#bbb}
 .balance-figure{display:inline-block;font-size:52px;line-height:1.05;letter-spacing:-.01em;border-bottom:4px solid var(--gold);padding-bottom:2px}
 .balance-panel .badge{background:transparent;color:var(--white);border-color:var(--white)}
@@ -157,7 +174,7 @@ h2,h3{margin:1.2em 0 .4em}
 .people{list-style:none;margin:8px 0;padding:0}
 .person{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;padding:14px 0;border-bottom:1px solid var(--rule)}
 .person.is-overdue{border-left:4px solid var(--black);padding-left:10px}
-.avatar-lg{width:44px;height:44px;border-radius:50%;background:var(--black);color:var(--gold);display:grid;place-items:center;font-weight:800;font-size:var(--fs-sm)}
+.avatar-lg{width:46px;height:46px;font-family:var(--font-serif);font-weight:700;font-size:var(--fs-sm);letter-spacing:.04em}
 .person-main{display:flex;flex-direction:column;gap:2px;min-width:0}
 .person-name{font-size:var(--fs-base)}
 .person-meta{font-size:var(--fs-sm);color:var(--ink-muted)}
@@ -176,11 +193,11 @@ h2,h3{margin:1.2em 0 .4em}
 .shops{list-style:none;margin:0;padding:0;display:grid;gap:14px}
 @media(min-width:620px){.shops{grid-template-columns:repeat(2,1fr)}}
 .shop-card{border:2px solid var(--black);border-radius:var(--radius);overflow:hidden}
-.shop-top{display:flex;align-items:center;gap:12px;background:var(--black);color:var(--white);padding:14px 16px;border-bottom:3px solid var(--gold)}
+.shop-top{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:2px solid var(--black)}
 .shop-top h2{margin:0;font-size:var(--fs-h3)}
-.shop-icon{width:40px;height:40px;border-radius:50%;background:var(--gold);color:var(--black);display:grid;place-items:center;flex:none}
-.shop-icon .icon{margin:0}
-.campus{font-size:var(--fs-xs);color:var(--gold);letter-spacing:.08em}
+.shop-icon{width:44px;height:44px}
+.shop-icon .icon{width:18px;height:18px;margin:0}
+.campus{font-size:var(--fs-xs);color:var(--ink-muted);letter-spacing:.08em}
 .shop-facts{margin:0;padding:6px 16px 10px}
 .shop-facts div{display:flex;justify-content:space-between;gap:12px;padding:8px 0}
 .shop-facts div+div{border-top:1px solid var(--rule)}
@@ -192,12 +209,12 @@ h2,h3{margin:1.2em 0 .4em}
 body.login-page{background:var(--black);color:var(--white);min-height:100vh}
 .login-page main{padding:32px 16px 48px}
 .login{max-width:400px;margin:0 auto}
-.login-brand{text-align:center;margin-bottom:24px}
-.login-mark{width:72px;height:72px;border-radius:50%;background:var(--gold);color:var(--black);display:inline-grid;place-items:center}
-.login-mark .icon{width:38px;height:38px;margin:0}
-.login-name{font-family:var(--font-display);font-weight:700;font-size:40px;letter-spacing:.12em;line-height:1;margin:16px 0 6px}
-.login-sub{margin:0;color:var(--gold);font-size:var(--fs-sm)}
-.login-card{background:var(--white);color:var(--ink);border-radius:var(--radius);padding:24px 20px;border-top:6px solid var(--gold)}
+.login-brand{text-align:center;margin-bottom:20px}
+.login-sub{margin:0;color:var(--gold);font-size:var(--fs-sm);letter-spacing:.2em;text-transform:uppercase}
+/* The shop's own sign (static/img/login-sign.webp, cut out of the photo along its rim) */
+.login-sign{display:block;width:auto;height:clamp(150px,28vh,300px);margin:0 auto 14px;opacity:.82;animation:photo-in 700ms var(--ease-out,ease-out) both}
+@keyframes photo-in{from{opacity:0;transform:scale(.97)}}
+.login-card{background:var(--white);color:var(--ink);border-radius:var(--radius);padding:24px 20px}
 .login-card h1{margin:0 0 8px;font-size:var(--fs-h2)}
 .btn.gold{background:var(--gold);color:var(--black)}
 .btn.gold:hover{background:#B8934C}
@@ -209,16 +226,19 @@ body.login-page{background:var(--black);color:var(--white);min-height:100vh}
 /* Handoffs (US-03): one card per handoff */
 .handoffs{list-style:none;margin:8px 0;padding:0;display:grid;gap:14px}
 .handoff{border:2px solid var(--black);border-radius:var(--radius);overflow:hidden}
-.handoff.is-mismatch{border-left-width:8px}
-.handoff-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--black);color:var(--white);padding:12px 14px;border-bottom:3px solid var(--gold)}
+.handoff.is-mismatch{border-width:4px}
+.handoff-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;border-bottom:1px solid var(--rule)}
+/* Black is kept for the handoffs waiting on you */
+.handoff.needs-action .handoff-head{background:var(--black);color:var(--white);border-bottom:3px solid var(--gold)}
 .handoff-title{flex:1;min-width:0}
 .handoff-title h3{margin:0;font-size:var(--fs-h3)}
-.handoff-title span{font-size:var(--fs-sm);color:#bbb}
+.handoff-title span{font-size:var(--fs-sm);color:var(--ink-muted)}
+.handoff.needs-action .handoff-title span{color:#bbb}
 .handoff-badges{display:flex;flex-wrap:wrap;gap:6px}
-.handoff-head .badge{background:transparent;color:var(--white);border-color:var(--white)}
-.handoff-head .badge.paid{background:var(--gold);color:var(--black);border-color:var(--gold)}
-.handoff-head .badge.overdue{background:var(--white);color:var(--black);border-color:var(--white)}
-.handoff-head .badge.overdue .icon{color:var(--black)}
+.needs-action .handoff-head .badge{background:transparent;color:var(--white);border-color:var(--white)}
+.needs-action .handoff-head .badge.paid{background:var(--gold);color:var(--black);border-color:var(--gold)}
+.needs-action .handoff-head .badge.overdue{background:var(--white);color:var(--black);border-color:var(--white)}
+.needs-action .handoff-head .badge.overdue .icon{color:var(--black)}
 .handoff-amounts{display:grid;grid-template-columns:repeat(3,1fr);margin:0;border-bottom:1px solid var(--rule);font-variant-numeric:tabular-nums}
 .handoff-amounts div{padding:12px 14px}
 .handoff-amounts div+div{border-left:1px solid var(--rule)}
@@ -235,3 +255,105 @@ body.login-page{background:var(--black);color:var(--white);min-height:100vh}
   .handoff-badges{flex-basis:100%;padding-left:52px}
   .handoff-amounts div{padding:10px}
 }
+
+/* Motion and interaction polish. Short, transform/opacity only, and off under reduced motion. */
+:root{--ease-out:cubic-bezier(.2,.8,.2,1);--dur-fast:120ms;--dur:200ms;--dur-slow:320ms}
+html{scroll-padding-bottom:16px}
+@media(max-width:619px){html{scroll-padding-bottom:calc(var(--bottom-nav) + env(safe-area-inset-bottom) + 16px)}}
+body{-webkit-tap-highlight-color:transparent}
+a,button,input,select,label{touch-action:manipulation}
+h1,h2,h3{text-wrap:balance}
+.handoff-title h3,.shop-top h2,.person-name{overflow-wrap:anywhere}
+
+/* Skip link: hidden until keyboard focus */
+.skip{position:absolute;left:12px;top:12px;z-index:30;background:var(--gold);color:var(--black);padding:10px 14px;border-radius:var(--radius-sm);font-weight:700;text-decoration:none;transform:translateY(-200%);transition:transform var(--dur) var(--ease-out)}
+.skip:focus-visible{transform:none}
+main:focus{outline:none}
+
+/* Hover, press and focus feedback */
+.btn,.logout,.tabs a,.back-link,input,select{transition:background-color var(--dur) var(--ease-out),color var(--dur) var(--ease-out),border-color var(--dur) var(--ease-out),transform var(--dur-fast) var(--ease-out)}
+.btn:hover{background:#262626}
+.btn.secondary:hover{background:var(--gold-soft)}
+.btn:active,.logout:active{transform:scale(.97)}
+@media(max-width:619px){.tabs a:active{transform:scale(.94)}}
+input:hover,select:hover{border-color:#444}
+.back-link{display:inline-flex;align-items:center;min-height:44px;color:var(--ink-muted);text-decoration:none;font-weight:600}
+.back-link .icon{transition:transform var(--dur) var(--ease-out)}
+.back-link:hover{color:var(--ink)}
+.back-link:hover .icon{transform:translateX(-3px)}
+
+/* Submit in progress (static/js/campuscuts.js) */
+.btn[aria-busy="true"]{cursor:progress;opacity:.8}
+.btn[aria-busy="true"]::after{content:"";display:inline-block;width:16px;height:16px;margin-left:10px;vertical-align:-3px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Arrival: only the thing you came for moves. Feedback messages and the balance panel rise in;
+   everything else is simply there, because this is a tool used all shift. */
+@keyframes rise{from{opacity:0;transform:translateY(6px)}}
+main>.msg,.balance-panel{animation:rise var(--dur-slow) var(--ease-out) both}
+.login-card{animation:rise var(--dur-slow) var(--ease-out) 80ms both}
+
+/* Balance progress fills from empty */
+@keyframes fill{from{transform:scaleX(0)}}
+.progress span{transform-origin:left center;animation:fill 700ms var(--ease-out) 200ms both}
+
+/* Page-to-page: quick crossfade, gold tab indicator slides to the new tab */
+@view-transition{navigation:auto}
+::view-transition-old(root),::view-transition-new(root){animation-duration:160ms}
+::view-transition-group(tab-ink){animation-duration:var(--dur-slow);animation-timing-function:var(--ease-out)}
+
+@media(prefers-reduced-motion:reduce){
+  @view-transition{navigation:none}
+  *,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+
+/* Handoff forms: what the system expects, and how the typed amount compares (static/js/campuscuts.js) */
+.expected{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);background:var(--gold-soft);font-size:var(--fs-sm)}
+.expected .icon{margin:1px 0 0}
+.expected[hidden]{display:none}
+.stack .diff,.stack .field-error{margin-top:6px}
+.diff{margin:6px 0 0;font-size:var(--fs-sm);color:var(--ink-muted)}
+.diff:empty{display:none}
+.diff[data-state="warn"]{color:var(--ink);font-weight:700}
+.confirm-row .diff{flex-basis:100%;margin:0}
+.field-error{display:flex;align-items:flex-start;gap:8px;margin:6px 0 0;font-size:var(--fs-sm);font-weight:700}
+.field-error .icon{width:16px;height:16px;margin:2px 0 0}
+input[aria-invalid="true"],select[aria-invalid="true"]{box-shadow:inset 0 0 0 1px var(--black);background:var(--gold-soft)}
+
+/* Owner and company homes: what is waiting, then the week in money */
+.waiting-strip{display:flex;align-items:center;gap:12px;margin:0 0 14px;padding:14px 16px;border-radius:var(--radius);background:var(--black);color:var(--white);text-decoration:none;border-bottom:3px solid var(--gold);--focus:var(--gold);transition:background-color var(--dur) var(--ease-out)}
+.waiting-strip:hover{background:#1c1c1c}
+.waiting-strip>.icon{color:var(--gold);margin:0}
+.waiting-strip>span:first-of-type{flex:1;min-width:0}
+.waiting-go{display:inline-flex;align-items:center;gap:2px;color:var(--gold);font-weight:700;white-space:nowrap}
+.waiting-go .icon{margin:0;transition:transform var(--dur) var(--ease-out)}
+.waiting-strip:hover .waiting-go .icon{transform:translateX(3px)}
+.tally-shops{margin-bottom:18px}
+@media(min-width:620px){.tally-shops{grid-template-columns:1fr 1fr 1.2fr}}
+.shop-top .campus{display:block;letter-spacing:0;font-size:var(--fs-sm)}
+.fact-overdue dt,.fact-overdue dd{color:var(--ink);font-weight:700}
+.shop-facts dd .badge{font-size:13px}
+.shop-card.needs-action .shop-top{background:var(--black);color:var(--white);border-bottom:3px solid var(--gold);--focus:var(--gold)}
+.shop-card.needs-action .campus{color:#bbb}
+
+/* Handoffs: one-tap confirm first, a different amount behind a disclosure */
+.confirm-row{flex-direction:column;align-items:stretch}
+.confirm-summary{margin:0;font-size:var(--fs-sm)}
+.confirm-row>.btn{justify-content:center;min-height:52px}
+.confirm-other summary{cursor:pointer;font-weight:600;font-size:var(--fs-sm);padding:6px 0;text-decoration:underline;text-underline-offset:3px}
+.confirm-other-row{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;margin-top:8px}
+.confirm-other-row label{flex:1 1 200px;margin:0}
+.confirm-other-row .btn{display:inline-flex;align-items:center}
+.confirm-other-row .diff{flex-basis:100%;margin:0}
+.record-fold{margin:14px 0}
+.record-fold>summary{display:flex;align-items:center;justify-content:center;width:100%;list-style:none}
+.record-fold>summary::-webkit-details-marker{display:none}
+.record-fold[open]>summary{border-bottom-left-radius:0;border-bottom-right-radius:0}
+.record-fold>.card{margin-top:0;border-top:0;border-top-left-radius:0;border-top-right-radius:0}
+
+/* My rent (US-06) */
+.balance-due{display:flex;align-items:center;gap:8px;margin:8px 0 0;color:#bbb;font-size:var(--fs-sm)}
+.balance-due .icon{width:16px;height:16px;margin:0;color:var(--gold)}
+.balance-due strong{color:var(--white)}
+.overdue-total{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:8px 0 4px;padding:12px 14px;border-radius:var(--radius-sm);background:var(--black);color:var(--white)}
+.overdue-total strong{font-family:var(--font-display);font-size:var(--fs-h2);color:var(--gold);font-variant-numeric:tabular-nums}

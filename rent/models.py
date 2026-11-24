@@ -18,6 +18,7 @@ from django.core.exceptions import PermissionDenied
 from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 from django.db.models import Q
+from django.utils import timezone
 
 
 # ---------------------------------------------------------------------------
@@ -213,7 +214,9 @@ class Contractor(models.Model):
     pay_type = models.CharField(max_length=20, choices=PayType.choices, default=PayType.WEEKLY_RENT)
     # Deactivated contractors keep their records and can still pay balances (US-05 AC-6)
     is_active = models.BooleanField(default=True)
-    joined_on = models.DateField(auto_now_add=True)
+    # Rent is owed from the rent period that contains this date (US-06 AC-2: no overdue before joining).
+    # The Owner sets it when adding a contractor (US-05); it defaults to today.
+    joined_on = models.DateField(default=timezone.localdate)
 
     class Meta:
         ordering = ["shop", "full_name"]
