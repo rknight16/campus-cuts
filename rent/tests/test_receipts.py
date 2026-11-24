@@ -171,3 +171,11 @@ class ReceiptAccessTests(ReceiptTestCase):
     def test_receipts_list_is_for_shop_supervisors_only(self):
         self.client.force_login(self.c.user)
         self.assertEqual(self.client.get(reverse("receipts")).status_code, 403)
+
+    def test_ac5_contractor_finds_the_receipt_in_their_payment_history(self):
+        receipt = self.receipt_for(self.pay())
+        self.client.force_login(self.c.user)
+        response = self.client.get(reverse("my_account"))
+        self.assertContains(response, reverse(
+            "receipt_detail", args=[receipt.pk]))
+        self.assertContains(response, receipt.number)

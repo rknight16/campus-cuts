@@ -8,8 +8,21 @@
 <h2 class="with-icon">{% icon "history" %}Payment history</h2>
 {% if payments %}
 <table>
-  <tr><th>Rent period</th><th>Amount</th><th>Paid on</th></tr>
-  {% for p in payments %}<tr><td>{{ p.rent_period }}</td><td>${{ p.amount|floatformat:0|intcomma }}</td><td>{{ p.payment_date }}</td></tr>{% endfor %}
+  <tr><th>Rent period</th><th>Amount</th><th>Paid on</th><th>Receipt</th></tr>
+  {% for p in payments %}
+  <tr>
+    <td>{{ p.rent_period }}</td>
+    <td>${{ p.amount|floatformat:0|intcomma }}</td>
+    <td>{{ p.payment_date }}</td>
+    <td>
+      {% for r in p.receipts.all %}
+        <a href="{% url 'receipt_detail' r.pk %}">{{ r.number }}</a>{% if r.is_corrected %} (Corrected){% endif %}{% if not forloop.last %}, {% endif %}
+      {% empty %}
+        -
+      {% endfor %}
+    </td>
+  </tr>
+  {% endfor %}
 </table>
 {% else %}<p class="empty">{% icon "receipt" %}<span>No payments recorded yet.</span></p>{% endif %}
 {% endblock %}
