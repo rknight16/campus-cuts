@@ -12,9 +12,15 @@ def make_user(username, role):
     return User.objects.create_user(username=username, password=PASSWORD, role=role)
 
 
-def make_contractor(username, staff_id, shop, role=Role.CONTRACTOR):
+# The SRS scenarios start in the rent period 2 to 8 Nov 2026, so everyone in make_world() has worked
+# there since then. Rent (and overdue, US-06 AC-2) only counts from the week a contractor joined.
+SRS_FIRST_DAY = date(2026, 11, 2)
+
+
+def make_contractor(username, staff_id, shop, role=Role.CONTRACTOR, joined_on=SRS_FIRST_DAY):
     user = make_user(username, role)
-    return Contractor.objects.create(user=user, full_name=username.title(), staff_id=staff_id, shop=shop)
+    return Contractor.objects.create(user=user, full_name=username.title(), staff_id=staff_id, shop=shop,
+                                     joined_on=joined_on)
 
 
 def make_world():

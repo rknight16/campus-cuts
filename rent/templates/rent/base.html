@@ -11,7 +11,7 @@
   {# A page-to-page transition skipped by a quick second click rejects its promises; that is expected, so keep it out of the console. #}
   <script>for(const t of["pageswap","pagereveal"])addEventListener(t,e=>{const v=e.viewTransition;if(v)for(const p of[v.ready,v.finished,v.updateCallbackDone])p.catch(()=>{})})</script>
 </head>
-<body class="{% block body_class %}{% if user.is_authenticated %}has-nav{% endif %}{% endblock %}">
+<body class="{% block body_class %}{% if user.is_authenticated and user.role != "CONTRACTOR" %}has-nav{% endif %}{% endblock %}">
   <a class="skip" href="#main">Skip to content</a>
   {% include "rent/icon_sprite.html" %}
   {% block chrome %}
@@ -33,7 +33,8 @@
   <div class="gold-rule"></div>
   <div class="checker"></div>
   {% endblock %}
-  {% if user.is_authenticated %}
+  {# A plain contractor only has My rent, so a one-tab bar is left out. #}
+  {% if user.is_authenticated and user.role != "CONTRACTOR" %}
   {% with here=request.resolver_match.url_name %}
   <nav class="tabs" aria-label="Main">
     {% if user.is_owner %}

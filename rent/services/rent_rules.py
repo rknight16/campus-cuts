@@ -15,6 +15,7 @@ status() returns AWAITING_EARNINGS. Callers must handle None, for example:
     if owed is None:
         ...  # show "Earnings not entered yet"
 """
+from datetime import timedelta
 from decimal import ROUND_HALF_UP, Decimal
 
 from django.db.models import Sum
@@ -115,24 +116,83 @@ def summary(contractor, period):
     }
 
 
-def overdue_periods(contractor, today=None):
-    """List of (period, balance) still owed after the end of the due day.
+def due_date(contractor, period):
+    """The day rent is due in `period`: the shop's due day that week (US-02 AC-3). None if no rent is set."""
+    setting = RentSetting.for_shop(contractor.shop, period)
+    if setting is None:
+        return None
+    return period.due_date_for(setting.due_day)
 
-    A period is overdue when its balance is above 0 and `today` is after
-    period.due_date_for(setting.due_day). Periods where the amount owed is not
-    known yet (commission with no earnings) are not counted. Oldest first.
+
+def weeks_since_joining(contractor, today=None):
+    """Every rent period from the week the contractor joined up to the current one, oldest first.
+
+    A week nobody opened the system in has no RentPeriod row yet. It is still included, as an
+    unsaved RentPeriod, so an unpaid week can never be skipped. Nothing is saved here.
+    """
+    if today is None:
+        today = timezone.localdate()
+    first = RentPeriod.monday_of(contractor.joined_on)
+    last = RentPeriod.monday_of(today)
+    saved = {p.start_date: p for p in RentPeriod.objects.filter(start_date__gte=first, start_date__lte=last)}
+    start = first
+    while start <= last:
+        yield saved.get(start) or RentPeriod(start_date=start, end_date=start + timedelta(days=6))
+        start += timedelta(days=7)
+
+
+def _balance_for_week(contractor, period):
+    """balance(), but also for an unsaved week: no payment or earnings can belong to one yet."""
+    if period.pk is not None:
+        return balance(contractor, period)
+    if contractor.pay_type == PayType.COMMISSION:
+        return None  # earnings not entered, so the amount owed is not known yet
+    return amount_owed(contractor, period)
+
+
+def overdue_periods(contractor, today=None):
+    """List of (period, balance) still owed after the end of the due day, oldest first.
+
+    Only weeks from the one the contractor joined (Contractor.joined_on) count, so a new
+    contractor is never overdue for weeks before they started. A period is overdue when its
+    balance is above 0 and `today` is after period.due_date_for(setting.due_day). Periods where
+    the amount owed is not known yet (commission with no earnings) are not counted.
     """
     if today is None:
         today = timezone.localdate()
     overdue = []
-    periods = RentPeriod.objects.filter(start_date__lte=today).order_by("start_date")
-    for period in periods:
-        setting = RentSetting.for_shop(contractor.shop, period)
-        if setting is None:
+    for period in weeks_since_joining(contractor, today):
+        due = due_date(contractor, period)
+        if due is None:
             continue  # no rent was set for this shop yet
-        if today <= period.due_date_for(setting.due_day):
+        if today <= due:
             continue  # not due yet (the due day itself is still on time)
-        owing = balance(contractor, period)
+        owing = _balance_for_week(contractor, period)
         if owing:  # skips None and 0
             overdue.append((period, owing))
     return overdue
+
+
+def account_overview(contractor, today=None):
+    """Everything the contractor's own account page shows (US-06 AC-1, AC-2), in one call.
+
+    This week: owed, paid, balance, status (from summary()), the due date and whether it has
+    passed. Overdue: each overdue week with its balance and due date, and the total.
+    """
+    if today is None:
+        today = timezone.localdate()
+    period = RentPeriod.for_date(today)
+    week = summary(contractor, period)
+    due = due_date(contractor, period)
+    overdue = [
+        {"period": p, "balance": owing, "due_date": due_date(contractor, p)}
+        for p, owing in overdue_periods(contractor, today)
+    ]
+    return {
+        "period": period,
+        **week,
+        "due_date": due,
+        "due_passed": due is not None and today > due,
+        "overdue": overdue,
+        "overdue_total": sum((row["balance"] for row in overdue), ZERO),
+    }
