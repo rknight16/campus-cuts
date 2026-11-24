@@ -19,7 +19,7 @@ from rent.access import ensure_same_shop
 from rent.formatting import format_money
 from rent.models import (CommissionEarning, Contractor, PayType, Payment,
                          PaymentCorrection, RentPeriod, Role)
-from rent.services import rent_rules
+from rent.services import receipts, rent_rules
 
 REASON_MAX_LENGTH = PaymentCorrection._meta.get_field("reason").max_length
 
@@ -44,11 +44,14 @@ def _to_money(value, field="amount"):
     try:
         amount = Decimal(str(value).strip().replace(",", "").lstrip("$"))
     except (InvalidOperation, ValueError):
-        raise ValidationError(f"The {field} must be a number, for example 15000.")
+        raise ValidationError(
+            f"The {field} must be a number, for example 15000.")
     if not amount.is_finite():
-        raise ValidationError(f"The {field} must be a number, for example 15000.")
+        raise ValidationError(
+            f"The {field} must be a number, for example 15000.")
     if amount != amount.quantize(rent_rules.CENTS):
-        raise ValidationError(f"The {field} can have at most 2 decimal places.")
+        raise ValidationError(
+            f"The {field} can have at most 2 decimal places.")
     return amount.quantize(rent_rules.CENTS)
 
 
@@ -70,7 +73,8 @@ def _check_period(period, today):
     if period is None:
         raise ValidationError("Choose the rent period.")
     if period.start_date > RentPeriod.monday_of(today):
-        raise ValidationError("You cannot record rent for a future rent period.")
+        raise ValidationError(
+            "You cannot record rent for a future rent period.")
 
 
 def _check_payment_date(payment_date, today):
@@ -85,7 +89,8 @@ def _check_amount_fits(amount, owed, already_paid):
         raise ValidationError("The amount must be more than $0.")
     most = max(owed - already_paid, rent_rules.ZERO)
     if most == 0:
-        raise ValidationError("This rent period is already paid in full. Nothing more can be recorded.")
+        raise ValidationError(
+            "This rent period is already paid in full. Nothing more can be recorded.")
     if amount > most:
         raise ValidationError(
             f"That is more than the balance. The most you can record is {format_money(most)}."
@@ -99,7 +104,8 @@ def _owed_or_error(contractor, period):
             raise ValidationError(
                 "Enter this contractor's commission earnings for the rent period first."
             )
-        raise ValidationError("No weekly rent is set for this shop for that rent period.")
+        raise ValidationError(
+            "No weekly rent is set for this shop for that rent period.")
     return owed
 
 
@@ -128,12 +134,13 @@ def record_payment(*, contractor, period, amount, payment_date, recorded_by):
         # together go over the balance.
         contractor = Contractor.objects.select_for_update().get(pk=contractor.pk)
         owed = _owed_or_error(contractor, period)
-        _check_amount_fits(amount, owed, rent_rules.amount_paid(contractor, period))
+        _check_amount_fits(
+            amount, owed, rent_rules.amount_paid(contractor, period))
         payment = Payment.objects.create(
             contractor=contractor, rent_period=period, amount=amount,
             payment_date=payment_date, recorded_by=recorded_by,
         )
-        # TODO(US-07): create_receipt(payment)
+        receipts.create_receipt(payment)
     return payment
 
 
@@ -148,7 +155,8 @@ def correct_payment(*, payment, new_amount, new_payment_date, reason, corrected_
     if not reason:
         raise ValidationError("Enter a reason for the correction.")
     if len(reason) > REASON_MAX_LENGTH:
-        raise ValidationError(f"Keep the reason under {REASON_MAX_LENGTH} characters.")
+        raise ValidationError(
+            f"Keep the reason under {REASON_MAX_LENGTH} characters.")
     today = timezone.localdate()
     new_amount = _to_money(new_amount)
     new_payment_date = _to_date(new_payment_date)
@@ -160,10 +168,12 @@ def correct_payment(*, payment, new_amount, new_payment_date, reason, corrected_
         Contractor.objects.select_for_update().get(pk=payment.contractor_id)
         payment = Payment.objects.select_for_update().get(pk=payment.pk)
         if new_amount == payment.amount and new_payment_date == payment.payment_date:
-            raise ValidationError("Nothing has changed. Change the amount or the date.")
+            raise ValidationError(
+                "Nothing has changed. Change the amount or the date.")
         contractor, period = payment.contractor, payment.rent_period
         owed = _owed_or_error(contractor, period)
-        others = rent_rules.amount_paid(contractor, period, exclude_payment=payment)
+        others = rent_rules.amount_paid(
+            contractor, period, exclude_payment=payment)
         _check_amount_fits(new_amount, owed, others)
 
         PaymentCorrection.objects.create(
@@ -175,7 +185,8 @@ def correct_payment(*, payment, new_amount, new_payment_date, reason, corrected_
         payment.amount = new_amount
         payment.payment_date = new_payment_date
         payment.save(update_fields=["amount", "payment_date"])
-        # TODO(US-07): create_receipt(payment, corrects=<previous receipt>) for a corrected receipt (US-07 AC-4)
+        receipts.create_receipt(
+            payment, corrects=receipts.latest_receipt(payment))
     return payment
 
 
@@ -186,7 +197,8 @@ def enter_commission_earnings(*, contractor, period, earnings, entered_by):
     """
     _ensure_shop_supervisor_of(entered_by, contractor)
     if contractor.pay_type != PayType.COMMISSION:
-        raise ValidationError(f"{contractor.full_name} pays weekly rent, not commission.")
+        raise ValidationError(
+            f"{contractor.full_name} pays weekly rent, not commission.")
     _check_period(period, timezone.localdate())
     earnings = _to_money(earnings, field="earnings")
     if earnings < 0:
