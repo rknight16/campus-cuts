@@ -1,15 +1,15 @@
 {% extends "rent/base.html" %}
-{% load humanize %}
+{% load humanize ui %}
 {% block content %}
 <h1>My rent</h1>
 <p>{{ contractor.full_name }} · {{ contractor.staff_id }} · {{ contractor.shop }}</p>
 <p class="muted">Rent period {{ period }}</p>
 <p class="todo">US-06 (Raynardo): owed, paid, balance, due date, status and overdue go here.</p>
-<h2>Payment history</h2>
+<h2 class="with-icon">{% icon "history" %}Payment history</h2>
 {% if payments %}
 <table>
   <tr><th>Rent period</th><th>Amount</th><th>Paid on</th></tr>
   {% for p in payments %}<tr><td>{{ p.rent_period }}</td><td>${{ p.amount|floatformat:0|intcomma }}</td><td>{{ p.payment_date }}</td></tr>{% endfor %}
 </table>
-{% else %}<p>No payments recorded yet.</p>{% endif %}
+{% else %}<p class="empty">{% icon "receipt" %}<span>No payments recorded yet.</span></p>{% endif %}
 {% endblock %}
