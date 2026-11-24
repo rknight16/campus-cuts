@@ -1,10 +1,12 @@
 """Home pages: after login each role lands on its own page (SDS 2.3.1)."""
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
 from django.shortcuts import redirect, render
 
 from rent.access import contractors_visible_to, role_required
 from rent.models import Role, RentPeriod, Shop
+from rent.services import rent_settings
 from rent.services import rent_rules
 
 # Who needs attention first on the supervisor's list
@@ -19,6 +21,11 @@ STATUS_ORDER = {
 @login_required
 def home(request):
     """Send each user to the home page for their role."""
+    # US-02 AC-5: tell the user about rent changes once per login
+    if not request.session.get("rent_notices_shown"):
+        for notice in rent_settings.pending_rent_notices(request.user):
+            messages.info(request, notice["message"])
+        request.session["rent_notices_shown"] = True
     return redirect({
         Role.OWNER: "owner_home",
         Role.COMPANY_SUPERVISOR: "company_home",
