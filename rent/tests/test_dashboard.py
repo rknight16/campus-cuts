@@ -6,6 +6,9 @@ from django.test import TestCase
 from rent.models import Handoff, HandoffStatus, HandoffStep, Payment
 from rent.services import dashboard
 from rent.tests.helpers import make_contractor, make_world
+from unittest.mock import patch
+
+from django.urls import reverse
 
 NOV_4 = date(2026, 11, 4)   # Wednesday, before the due date
 NOV_7 = date(2026, 11, 7)   # Saturday, after the Friday due day
@@ -69,3 +72,48 @@ class DashboardServiceTests(TestCase):
         self.assertEqual(utech["owed"], Decimal("36000"))
         self.assertEqual(utech["paid"], Decimal("0"))
         self.assertEqual(utech["balance"], Decimal("36000"))
+
+
+class DashboardPageTests(TestCase):
+    def setUp(self):
+        patcher = patch("django.utils.timezone.localdate", return_value=NOV_4)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.w = make_world()
+        self.url = reverse("dashboard")
+
+    def test_ac5_owner_can_open_dashboard(self):
+        self.client.force_login(self.w.owner)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "UWI Taylor Hall")
+
+    def test_ac5_company_supervisor_can_open_dashboard(self):
+        self.client.force_login(self.w.company)
+        self.assertEqual(self.client.get(self.url).status_code, 200)
+
+    def test_ac5_shop_supervisor_is_denied(self):
+        self.client.force_login(self.w.taylor_sup.user)
+        self.assertEqual(self.client.get(self.url).status_code, 403)
+
+    def test_ac5_contractor_is_denied(self):
+        self.client.force_login(self.w.taylor_c.user)
+        self.assertEqual(self.client.get(self.url).status_code, 403)
+
+    def test_ac5_logged_out_user_is_sent_to_login(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 302)
+
+    def test_ac4_page_lists_every_shop_even_with_nothing_paid(self):
+        self.client.force_login(self.w.owner)
+        response = self.client.get(self.url)
+        self.assertContains(response, "UTech Barbershop")
+        self.assertContains(response, "Not yet handed over")
+
+    def test_ac3_page_shows_mismatch_flag(self):
+        Handoff.objects.create(
+            step=HandoffStep.SHOP_TO_COMPANY, shop=self.w.taylor, rent_period=self.w.period,
+            expected_amount=Decimal("30000"), amount_handed=Decimal("29000"),
+            handed_date=date(2026, 11, 3), handed_by=self.w.taylor_sup.user)
+        self.client.force_login(self.w.owner)
+        self.assertContains(self.client.get(self.url), "Mismatch")
