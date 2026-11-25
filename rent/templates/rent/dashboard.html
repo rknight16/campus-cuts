@@ -1,0 +1,63 @@
+{% extends "rent/base.html" %}
+{% load ui money %}
+{% block title %}Rent collection dashboard · Campus Cuts Rent{% endblock %}
+{% block content %}
+<h1>Rent collection dashboard</h1>
+<p>{% icon "calendar" %}{{ period }}, {{ shops|length }} shop{{ shops|length|pluralize }}</p>
+
+<h2>All shops</h2>
+<p>
+  Owed {{ totals.owed|money }} ·
+  Paid {{ totals.paid|money }} ·
+  Balance {{ totals.balance|money }} ·
+  Overdue {{ totals.overdue|money }}
+</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Shop</th>
+      <th>Owed</th>
+      <th>Paid</th>
+      <th>Balance</th>
+      <th>Overdue</th>
+      <th>Handoff</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in shops %}
+    <tr>
+      <td>
+        {{ row.shop.name }}
+        {% if row.awaiting_earnings %}
+          <br><small>{{ row.awaiting_earnings }} contractor{{ row.awaiting_earnings|pluralize }} with earnings not entered</small>
+        {% endif %}
+      </td>
+      <td>{{ row.owed|money }}</td>
+      <td>{{ row.paid|money }}</td>
+      <td>{{ row.balance|money }}</td>
+      <td>
+        {% if row.overdue %}{% status_badge "Overdue" %} {% endif %}{{ row.overdue|money }}
+      </td>
+      <td>
+        {% with h=row.handoff %}
+          {% if h %}
+            {% status_badge h.get_status_display %}
+            {% if h.is_mismatch %}
+              {% status_badge "Mismatch" %}<br>
+              <small>
+                Expected {{ h.expected_amount|money }}, handed {{ h.amount_handed|money }}{% if h.amount_received is not None %}, received {{ h.amount_received|money }}{% endif %}
+              </small>
+            {% endif %}
+          {% else %}
+            Not yet handed over
+          {% endif %}
+        {% endwith %}
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6">No shops yet.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
