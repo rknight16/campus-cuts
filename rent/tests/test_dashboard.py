@@ -3,8 +3,8 @@ from decimal import Decimal
 
 from django.test import TestCase
 
-from rent.models import Handoff, HandoffStatus, HandoffStep, Payment
-from rent.services import dashboard
+from rent.models import Handoff, HandoffStatus, HandoffStep, Payment, RentPeriod
+from rent.services import contractors, dashboard
 from rent.tests.helpers import make_contractor, make_world
 from unittest.mock import patch
 
@@ -12,7 +12,7 @@ from django.urls import reverse
 
 NOV_4 = date(2026, 11, 4)   # Wednesday, before the due date
 NOV_7 = date(2026, 11, 7)   # Saturday, after the Friday due day
-
+NOV_10 = date(2026, 11, 10)  # Tuesday of the week after the transfer starts
 
 def row_for(result, shop):
     return next(r for r in result["shops"] if r["shop"] == shop)
@@ -118,6 +118,34 @@ class DashboardPageTests(TestCase):
         self.client.force_login(self.w.owner)
         self.assertContains(self.client.get(self.url), "Mismatch")
 
+class DashboardTransferTests(TestCase):
+    def setUp(self):
+        # "Today" is 4 Nov, so a transfer made now starts on Monday 9 Nov (US-05 AC-4)
+        patcher = patch("django.utils.timezone.localdate", return_value=NOV_4)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.w = make_world()
+        contractors.transfer(contractor=self.w.taylor_c, new_shop=self.w.utech)
+
+    def test_transfer_does_not_change_the_current_week(self):
+        result = dashboard.shop_summary(today=NOV_4)
+        self.assertEqual(row_for(result, self.w.taylor)["owed"], Decimal("30000"))
+        self.assertEqual(row_for(result, self.w.utech)["owed"], Decimal("24000"))
+
+    def test_transferred_contractor_shows_at_new_shop_from_next_period(self):
+        Payment.objects.create(
+            contractor=self.w.taylor_c, rent_period=RentPeriod.for_date(NOV_10),
+            amount=Decimal("5000"), payment_date=NOV_10, recorded_by=self.w.taylor_sup.user)
+        result = dashboard.shop_summary(today=NOV_10)
+        taylor = row_for(result, self.w.taylor)
+        utech = row_for(result, self.w.utech)
+        self.assertEqual(taylor["owed"], Decimal("15000"))   # only the supervisor is left
+        self.assertEqual(taylor["paid"], Decimal("0"))
+        self.assertEqual(utech["owed"], Decimal("36000"))    # 3 x $12,000, the new shop's rent
+        self.assertEqual(utech["paid"], Decimal("5000"))
+        self.assertEqual(result["totals"]["owed"], Decimal("51000"))  # nobody counted twice
+        
+        
 class DeactivatedContractorTests(TestCase):
     """US-05 AC-6 on the dashboard: a deactivated contractor's unpaid balance stays overdue,
     but they are not charged for weeks after they were deactivated."""
