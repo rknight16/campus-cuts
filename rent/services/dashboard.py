@@ -9,7 +9,9 @@ from django.utils import timezone
 from rent.models import Contractor, Handoff, HandoffStep, RentPeriod, Shop
 from rent.services import rent_rules
 from rent.services.contractors import shop_for
+
 ZERO = rent_rules.ZERO
+
 
 def shop_summary(today=None):
     """One row per shop for the current rent period, plus totals for all shops."""
@@ -30,7 +32,9 @@ def shop_summary(today=None):
         for shop in Shop.objects.select_related("supervisor")
     }
 
-    for contractor in Contractor.objects.filter(is_active=True):
+    # Deactivated contractors stay in: rent_rules charges them nothing after deactivated_on,
+    # but any balance they still owe stays overdue (US-05 AC-6).
+    for contractor in Contractor.objects.all():
         # US-05 AC-4: the shop the contractor is assigned to in this period
         row = rows[shop_for(contractor, period).pk]
         week = rent_rules.summary(contractor, period)
@@ -46,9 +50,3 @@ def shop_summary(today=None):
     shop_rows = list(rows.values())
     totals = {key: sum((r[key] for r in shop_rows), ZERO) for key in ("owed", "paid", "balance", "overdue")}
     return {"period": period, "shops": shop_rows, "totals": totals}
-    
-
-
-
-
-    

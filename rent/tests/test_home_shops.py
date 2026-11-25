@@ -7,7 +7,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from rent.models import Handoff, HandoffStatus, HandoffStep, Payment, RentPeriod
-from rent.tests.helpers import make_world
+from rent.tests.helpers import make_contractor, make_world
 
 TODAY = date(2026, 11, 11)  # Wednesday of the week after the SRS period (2 to 8 Nov 2026)
 
@@ -34,6 +34,18 @@ class ShopHomeTests(TestCase):
         self.assertEqual(taylor["overdue"], Decimal("30000"))      # nobody paid last week (due Fri 6 Nov)
         self.assertEqual(response.context["collected"], Decimal("5000"))
         self.assertContains(response, "Collected this week")
+
+    def test_deactivated_contractors_unpaid_rent_stays_overdue(self):
+        """US-05 AC-6: someone who left on Sun 8 Nov owing last week's $15,000 still shows as overdue,
+        and is not charged this week."""
+        leaver = make_contractor("leaver", "1009", self.w.taylor)
+        leaver.is_active = False
+        leaver.deactivated_on = date(2026, 11, 8)
+        leaver.save()
+        self.client.force_login(self.w.owner)
+        taylor = self.card(self.client.get(reverse("owner_home")), self.w.taylor)
+        self.assertEqual(taylor["overdue"], Decimal("45000"))      # 30,000 as before + the leaver's 15,000
+        self.assertEqual(taylor["outstanding"], Decimal("25000"))  # unchanged: nothing charged this week
 
     def test_company_supervisor_sees_how_many_handoffs_wait_for_them(self):
         Handoff.objects.create(

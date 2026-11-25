@@ -56,7 +56,9 @@ def shop_cards(shops, period, last_period, user, today=None):
     cards = []
     for shop in shops:
         collected = outstanding = overdue = rent_rules.ZERO
-        for contractor in Contractor.objects.filter(is_active=True):
+        # Deactivated contractors stay in: rent_rules charges them nothing after deactivated_on,
+        # but any balance they still owe stays overdue (US-05 AC-6).
+        for contractor in Contractor.objects.all():
 
             # AC-4: Only include contractors assigned to this shop for the period.
             if shop_for(contractor, period) != shop:
