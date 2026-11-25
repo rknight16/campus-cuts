@@ -9,6 +9,8 @@ from django.core.exceptions import PermissionDenied, ValidationError
 
 from rent.models import RentPeriod, RentSetting, Role, Shop, Weekday
 
+from rent.services.contractors import shop_for
+
 CENTS = Decimal("0.01")
 # RentSetting.weekly_rent holds at most 99,999,999.99
 MAX_RENT = Decimal("100000000")
@@ -48,7 +50,7 @@ def _shops_for(user):
     # contractors and Shop Supervisors
     profile = getattr(user, "contractor_profile", None)
     if user.role != Role.OWNER and profile is not None:
-        return Shop.objects.filter(pk=profile.shop_id)
+        return Shop.objects.filter(pk=shop_for(profile, RentPeriod.current()).pk)
     return Shop.objects.none()
 
 

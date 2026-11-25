@@ -1,0 +1,340 @@
+{% extends "rent/base.html" %}
+{% load ui %}
+
+{% block title %}Manage Contractors · Campus Cuts Rent{% endblock %}
+
+{% block content %}
+
+<header class="page-head">
+    <h1>Manage Contractors</h1>
+    <p class="period">Current period: {{ current_period }}</p>
+</header>
+
+<!-- AC-1 and AC-2: Add a new contractor -->
+<h2>Add Contractor</h2>
+
+<form method="post" enctype="multipart/form-data" class="card stack">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="add">
+
+    {{ add_form.as_p }}
+
+    <button type="submit" class="btn big">
+        Add Contractor
+    </button>
+</form>
+
+
+<!-- Display all existing contractors -->
+<h2>Independent Contractors</h2>
+
+{% for contractor in contractors %}
+
+<div class="card stack">
+
+    <h3>{{ contractor.full_name }}</h3>
+
+    {% if contractor.photo %}
+        <img src="{{ contractor.photo.url }}"
+             alt="{{ contractor.full_name }}"
+             width="80" height="80"
+             style="object-fit: cover; border-radius: 8px;">
+    {% endif %}
+
+    <p><strong>Staff ID:</strong> {{ contractor.staff_id }}</p>
+
+    <p><strong>Shop:</strong> {{ contractor.current_shop }}</p>
+
+    <p><strong>Phone:</strong> {{ contractor.phone|default:"Not provided" }}</p>
+
+    <p>
+        <strong>Payment Type:</strong>
+
+        {% if contractor.current_pay_type == "COMMISSION" %}
+            Commission (60:40)
+        {% else %}
+            Weekly Rent
+        {% endif %}
+    </p>
+
+    <p>
+        <strong>Role:</strong>
+        {{ contractor.user.get_role_display }}
+    </p>
+
+    <p>
+        <strong>Status:</strong>
+        {% if contractor.is_active %}
+            Active
+        {% else %}
+            Inactive
+        {% endif %}
+    </p>
+
+
+    <!-- Only show management options for active contractors -->
+    {% if contractor.is_active %}
+
+    <!-- Edit contractor details -->
+    <details>
+        <summary>Edit Details</summary>
+
+        <form method="post"
+              enctype="multipart/form-data"
+              class="stack">
+
+            {% csrf_token %}
+
+            <input type="hidden" name="action" value="edit">
+            <input type="hidden" name="contractor_id"
+                   value="{{ contractor.pk }}">
+
+            <label>Full Name
+                <input type="text" name="full_name"
+                       value="{{ contractor.full_name }}"
+                       maxlength="150" required>
+            </label>
+
+            <label>Phone
+                <input type="text" name="phone"
+                       value="{{ contractor.phone }}"
+                       maxlength="20">
+            </label>
+
+            <label>Photo
+                <input type="file" name="photo" accept="image/*">
+            </label>
+
+            <button type="submit" class="btn">
+                Save Changes
+            </button>
+
+        </form>
+    </details>
+
+
+    <!-- AC-4: Transfer to another shop -->
+    <details>
+        <summary>Transfer Contractor</summary>
+
+        <form method="post" class="stack">
+
+            {% csrf_token %}
+
+            <input type="hidden" name="action" value="transfer">
+            <input type="hidden" name="contractor_id"
+                   value="{{ contractor.pk }}">
+
+            {{ transfer_form.as_p }}
+
+            <p class="note">
+                Transfers take effect from the next rent period.
+            </p>
+
+            <button type="submit" class="btn">
+                Transfer
+            </button>
+
+        </form>
+    </details>
+
+
+    <!-- AC-3: Change commission to weekly rent -->
+    {% if contractor.current_pay_type == "COMMISSION" %}
+
+    <details>
+        <summary>Change to Weekly Rent</summary>
+
+        <form method="post" class="stack">
+
+            {% csrf_token %}
+
+            <input type="hidden" name="action"
+                   value="change_pay_type">
+
+            <input type="hidden" name="contractor_id"
+                   value="{{ contractor.pk }}">
+
+            {{ pay_type_form.as_p }}
+
+            <p class="note">
+                Previous commission periods will remain unchanged.
+            </p>
+
+            <button type="submit" class="btn">
+                Change Payment Type
+            </button>
+
+        </form>
+    </details>
+
+    {% endif %}
+
+
+    <!-- AC-6 and SF-3: Confirm before deactivation -->
+    <details>
+        <summary>Deactivate Contractor</summary>
+
+        <form method="post" class="stack"
+              onsubmit="return confirm('Are you sure you want to deactivate this contractor?');">
+
+            {% csrf_token %}
+
+            <input type="hidden" name="action" value="deactivate">
+
+            <input type="hidden" name="contractor_id"
+                   value="{{ contractor.pk }}">
+
+            <p>
+                This contractor will no longer be able to log in.
+                Previous records and outstanding balances will be kept.
+            </p>
+
+            <label>
+                <input type="checkbox" name="confirm" required>
+                I confirm that I want to deactivate this contractor.
+            </label>
+
+            <button type="submit" class="btn">
+                Deactivate
+            </button>
+
+        </form>
+    </details>
+
+    {% endif %}
+
+</div>
+
+{% empty %}
+
+<p>No contractors have been added.</p>
+
+{% endfor %}
+
+
+<!-- AC-5: Manage Shop Supervisors -->
+<h2>Shop Supervisors</h2>
+
+<div class="table-wrap">
+
+    <table>
+        <thead>
+            <tr>
+                <th>Shop</th>
+                <th>Current Supervisor</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            {% for shop in shops %}
+
+            <tr>
+                <td>{{ shop.name }}</td>
+
+                <td>
+                    {{ shop.supervisor.full_name|default:"Not assigned" }}
+                </td>
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+    </table>
+
+</div>
+
+
+<form method="post" class="card stack">
+
+    {% csrf_token %}
+
+    <input type="hidden" name="action" value="set_supervisor">
+
+    <h3>Assign Shop Supervisor</h3>
+
+    {{ supervisor_form.as_p }}
+
+    <p class="note">
+        The previous Shop Supervisor will return to the
+        Independent Contractor role.
+    </p>
+
+    <button type="submit" class="btn">
+        Assign Supervisor
+    </button>
+
+</form>
+
+
+<!-- AC-5: Manage the Company Supervisor -->
+<h2>Company Supervisor</h2>
+
+{% for supervisor in company_supervisors %}
+
+<div class="card stack">
+
+    <h3>{{ supervisor.get_full_name }}</h3>
+
+    <p>Username: {{ supervisor.username }}</p>
+
+    {% if supervisor.is_active %}
+
+    <p>Status: Active</p>
+
+    <form method="post" class="stack"
+          onsubmit="return confirm('Are you sure you want to deactivate the Company Supervisor?');">
+
+        {% csrf_token %}
+
+        <input type="hidden" name="action"
+               value="deactivate_company_supervisor">
+
+        <input type="hidden" name="user_id"
+               value="{{ supervisor.pk }}">
+
+        <label>
+            <input type="checkbox" name="confirm" required>
+            Confirm deactivation
+        </label>
+
+        <button type="submit" class="btn">
+            Deactivate Account
+        </button>
+
+    </form>
+
+    {% else %}
+
+    <p>Status: Inactive</p>
+
+    {% endif %}
+
+</div>
+
+{% empty %}
+
+<p>No Company Supervisor accounts found.</p>
+
+{% endfor %}
+
+
+<form method="post" class="card stack">
+
+    {% csrf_token %}
+
+    <input type="hidden" name="action"
+           value="create_company_supervisor">
+
+    <h3>Create Company Supervisor</h3>
+
+    {{ company_form.as_p }}
+
+    <button type="submit" class="btn">
+        Create Account
+    </button>
+
+</form>
+
+{% endblock %}

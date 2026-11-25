@@ -22,6 +22,7 @@ from django.db.models import Sum
 from django.utils import timezone
 
 from rent.models import CommissionEarning, PayType, Payment, RentPeriod, RentSetting
+from rent.services.contractors import shop_for, pay_type_for
 
 COMMISSION_SHARE = Decimal("0.40")  # shop gets 40% of earnings (SRS 1.1)
 CENTS = Decimal("0.01")
@@ -46,24 +47,31 @@ def commission_owed(earnings):
 
 
 def amount_owed(contractor, period):
-    """What the contractor owes for `period`.
+    """Calculates how much a contractor owes for a rent period."""
 
-    Weekly rent: the shop's weekly rent in force for that period
-    (RentSetting.for_shop), so a later rent change never alters old periods.
-    Commission: 40% of the earnings entered for that period, rounded to cents.
+    # AC-6: Stop charging rent for weeks after deactivation.
+    if contractor.deactivated_on:
+        if period.start_date > contractor.deactivated_on:
+            return ZERO
 
-    Returns None when it cannot be worked out yet: a commission contractor with
-    no earnings entered, or a shop with no rent setting for that period.
-    """
-    if contractor.pay_type == PayType.COMMISSION:
+    # AC-3: Use the payment type that applied during this week.
+    if pay_type_for(contractor, period) == PayType.COMMISSION:
+        if period.pk is None:
+            return None
+
         earning = commission_earnings(contractor, period)
+
         if earning is None:
             return None
+
         return commission_owed(earning.earnings)
 
-    setting = RentSetting.for_shop(contractor.shop, period)
+    # AC-4: Use the shop assigned during this rent period.
+    setting = RentSetting.for_shop(shop_for(contractor, period), period)
+
     if setting is None:
         return None
+
     return setting.weekly_rent
 
 
@@ -118,7 +126,7 @@ def summary(contractor, period):
 
 def due_date(contractor, period):
     """The day rent is due in `period`: the shop's due day that week (US-02 AC-3). None if no rent is set."""
-    setting = RentSetting.for_shop(contractor.shop, period)
+    setting = RentSetting.for_shop(shop_for(contractor, period), period)
     if setting is None:
         return None
     return period.due_date_for(setting.due_day)
@@ -142,11 +150,13 @@ def weeks_since_joining(contractor, today=None):
 
 
 def _balance_for_week(contractor, period):
-    """balance(), but also for an unsaved week: no payment or earnings can belong to one yet."""
+    """Calculates the balance for saved and unsaved rent periods."""
+
     if period.pk is not None:
         return balance(contractor, period)
-    if contractor.pay_type == PayType.COMMISSION:
-        return None  # earnings not entered, so the amount owed is not known yet
+
+    # Uses the updated rent calculation for assignment history
+    # and deactivated contractors (US-05).
     return amount_owed(contractor, period)
 
 
