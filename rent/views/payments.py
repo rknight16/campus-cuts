@@ -19,6 +19,7 @@ from rent.formatting import format_money
 from rent.models import Contractor, PayType, Payment, RentPeriod, Role
 from rent.services import payments as payment_service
 from rent.services import rent_rules
+from rent.services.contractors import shop_for, pay_type_for
 
 PERIODS_SHOWN = 8  # current period and the 7 before it
 
@@ -45,11 +46,15 @@ def record_payment(request):
     """Pick contractor and period, see owed/paid/balance, record a payment (AC-1 to AC-6)."""
     data = request.POST if request.method == "POST" else request.GET
 
+        # Get the rent period before checking the contractor's shop.
+    period = _get_or_404(RentPeriod, data["period"]) if data.get("period") else RentPeriod.current()
+
     contractor = None
     if data.get("contractor"):
         contractor = _get_or_404(Contractor.objects.select_related("shop"), data["contractor"])
-        ensure_same_shop(request.user, contractor.shop)  # typed URL for another shop -> 403
-    period = _get_or_404(RentPeriod, data["period"]) if data.get("period") else RentPeriod.current()
+
+        # AC-4: Check the shop assigned during the selected period.
+        ensure_same_shop(request.user, shop_for(contractor, period))
 
     error = None
     if request.method == "POST" and contractor is not None:
@@ -81,7 +86,7 @@ def record_payment(request):
             error = " ".join(e.messages)  # nothing was saved
 
     context = {
-        "contractors": contractors_visible_to(request.user).order_by("-is_active", "full_name"),
+        "contractors": contractors_visible_to(request.user, period).order_by("-is_active", "full_name"),
         "periods": _recent_periods(),
         "contractor": contractor,
         "period": period,
@@ -92,7 +97,7 @@ def record_payment(request):
     if contractor is not None:
         context.update({
             "summary": rent_rules.summary(contractor, period),
-            "is_commission": contractor.pay_type == PayType.COMMISSION,
+            "is_commission": pay_type_for(contractor, period) == PayType.COMMISSION,
             "earning": rent_rules.commission_earnings(contractor, period),
             "period_payments": contractor.payments.filter(rent_period=period)
                                          .select_related("recorded_by").prefetch_related("corrections"),
@@ -104,7 +109,7 @@ def record_payment(request):
 def correct_payment(request, payment_id):
     """Correct a payment's amount or date with a reason; the original is kept (AC-7)."""
     payment = get_object_or_404(Payment.objects.select_related("contractor__shop", "rent_period"), pk=payment_id)
-    ensure_same_shop(request.user, payment.contractor.shop)  # typed URL for another shop -> 403
+    ensure_same_shop(request.user, shop_for(payment.contractor, payment.rent_period))  # typed URL for another shop -> 403
 
     error = None
     if request.method == "POST":

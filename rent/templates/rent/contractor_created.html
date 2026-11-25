@@ -1,0 +1,38 @@
+{% extends "rent/base.html" %}
+
+{% block title %}Contractor Created{% endblock %}
+
+{% block content %}
+
+<header class="page-head">
+    <h1>Contractor Created Successfully</h1>
+</header>
+
+<div class="card stack">
+
+    <h2>{{ contractor.full_name }}</h2>
+
+    <!-- Display the new contractor's information -->
+    <p><strong>Staff ID:</strong> {{ contractor.staff_id }}</p>
+
+    <p><strong>Shop:</strong> {{ contractor.shop }}</p>
+
+    <h3>Login Details</h3>
+
+    <!-- Display the automatically generated login details -->
+    <p><strong>Username:</strong> {{ contractor.user.username }}</p>
+
+    <p><strong>Temporary Password:</strong> {{ initial_password }}</p>
+
+    <p>
+        Please provide these login details to the contractor privately.
+        The temporary password will only be displayed on this page.
+    </p>
+
+    <a href="{% url 'contractors' %}" class="btn">
+        Back to Contractors
+    </a>
+
+</div>
+
+{% endblock %}

@@ -27,6 +27,11 @@ class RentPeriodTests(TestCase):
         p = RentPeriod.for_date(date(2026, 11, 2))
         self.assertEqual(p.due_date_for(Weekday.FRIDAY), date(2026, 11, 6))
 
+    def test_label_works_on_every_platform(self):
+        # DEF-1-01: the label used %-d, which only works on Mac/Linux and crashed on Windows
+        p = RentPeriod.for_date(date(2026, 11, 4))
+        self.assertEqual(str(p), "2 Nov to 8 Nov 2026")
+
 
 class RentSettingTests(TestCase):
     def test_earlier_period_keeps_old_rent(self):  # SRS US-02 AC-4 scenario

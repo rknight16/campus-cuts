@@ -23,7 +23,7 @@
     <span class="avatar-lg" aria-hidden="true">{{ c.full_name|initials }}</span>
     <div class="person-main">
       <strong class="person-name">{{ c.full_name }}</strong>
-      <span class="person-meta">ID {{ c.staff_id }}, {{ c.get_pay_type_display|lower }}</span>
+      <span class="person-meta">ID {{ c.staff_id }}, {{ r.pay_type|lower }}</span>
       <span class="person-status">
         {% status_badge s.status %}
         {% if r.overdue_total %}<span class="badge overdue">{% icon "alert" %}{{ r.overdue_total|money }} overdue</span>{% endif %}

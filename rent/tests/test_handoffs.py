@@ -108,6 +108,18 @@ class HandoffTests(TestCase):
                 handed_by=self.w.taylor_sup.user,
             )
 
+    def test_zero_handoff_amount_shows_the_srs_message(self):
+        # DEF-3-02: TS-3.6A expects "The amount is invalid."
+        with self.assertRaises(ValidationError) as caught:
+            record_shop_handoff(
+                shop=self.w.taylor,
+                period=self.w.period,
+                amount=Decimal("0"),
+                handed_date=self.w.period.end_date,
+                handed_by=self.w.taylor_sup.user,
+            )
+        self.assertIn("The amount is invalid.", " ".join(caught.exception.messages))
+
     def test_negative_handoff_amount_is_rejected(self):
         with self.assertRaises(ValidationError):
             record_shop_handoff(

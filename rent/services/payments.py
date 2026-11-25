@@ -20,7 +20,7 @@ from rent.formatting import format_money
 from rent.models import (CommissionEarning, Contractor, PayType, Payment,
                          PaymentCorrection, RentPeriod, Role)
 from rent.services import receipts, rent_rules
-
+from rent.services.contractors import shop_for, pay_type_for
 REASON_MAX_LENGTH = PaymentCorrection._meta.get_field("reason").max_length
 
 
@@ -28,11 +28,18 @@ REASON_MAX_LENGTH = PaymentCorrection._meta.get_field("reason").max_length
 # Checks shared by the functions below
 # ---------------------------------------------------------------------------
 
-def _ensure_shop_supervisor_of(user, contractor):
-    """AC-5: only the Shop Supervisor of the contractor's own shop may do this."""
+def _ensure_shop_supervisor_of(user, contractor, period):
+    """Only the supervisor of the assigned shop can record payments."""
+
     if user is None or user.role != Role.SHOP_SUPERVISOR:
         raise PermissionDenied("Only a Shop Supervisor can record payments.")
-    ensure_same_shop(user, contractor.shop)
+
+    # Reject a missing rent period before checking the shop.
+    if period is None:
+        raise ValidationError("Rent period is required.")
+
+    # US-05 AC-4: Check the shop assigned during the rent period.
+    ensure_same_shop(user, shop_for(contractor, period))
 
 
 def _to_money(value, field="amount"):
@@ -100,7 +107,7 @@ def _check_amount_fits(amount, owed, already_paid):
 def _owed_or_error(contractor, period):
     owed = rent_rules.amount_owed(contractor, period)
     if owed is None:
-        if contractor.pay_type == PayType.COMMISSION:
+        if pay_type_for(contractor, period) == PayType.COMMISSION:
             raise ValidationError(
                 "Enter this contractor's commission earnings for the rent period first."
             )
@@ -120,7 +127,7 @@ def record_payment(*, contractor, period, amount, payment_date, recorded_by):
     """
     if contractor is None:
         raise ValidationError("Choose the contractor.")
-    _ensure_shop_supervisor_of(recorded_by, contractor)
+    _ensure_shop_supervisor_of(recorded_by, contractor, period)
     today = timezone.localdate()
     _check_period(period, today)
     amount = _to_money(amount)
@@ -150,7 +157,7 @@ def correct_payment(*, payment, new_amount, new_payment_date, reason, corrected_
     A PaymentCorrection row stores the old and new values, the reason, who and
     when. The Payment then holds the corrected values. Nothing is deleted.
     """
-    _ensure_shop_supervisor_of(corrected_by, payment.contractor)
+    _ensure_shop_supervisor_of(corrected_by, payment.contractor, payment.rent_period)
     reason = (reason or "").strip()
     if not reason:
         raise ValidationError("Enter a reason for the correction.")
@@ -195,8 +202,8 @@ def enter_commission_earnings(*, contractor, period, earnings, entered_by):
 
     Amount owed then becomes 40% of earnings ($30,000 earnings -> $12,000 owed).
     """
-    _ensure_shop_supervisor_of(entered_by, contractor)
-    if contractor.pay_type != PayType.COMMISSION:
+    _ensure_shop_supervisor_of(entered_by, contractor, period)
+    if pay_type_for(contractor, period) != PayType.COMMISSION:
         raise ValidationError(
             f"{contractor.full_name} pays weekly rent, not commission.")
     _check_period(period, timezone.localdate())

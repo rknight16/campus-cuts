@@ -214,6 +214,7 @@ class Contractor(models.Model):
     pay_type = models.CharField(max_length=20, choices=PayType.choices, default=PayType.WEEKLY_RENT)
     # Deactivated contractors keep their records and can still pay balances (US-05 AC-6)
     is_active = models.BooleanField(default=True)
+    deactivated_on = models.DateField(null=True, blank=True)
     # Rent is owed from the rent period that contains this date (US-06 AC-2: no overdue before joining).
     # The Owner sets it when adding a contractor (US-05); it defaults to today.
     joined_on = models.DateField(default=timezone.localdate)
@@ -228,7 +229,40 @@ class Contractor(models.Model):
     def __str__(self):
         return f"{self.full_name} ({self.staff_id})"
 
+# Shop assignment history (US-05 AC-3 and AC-4)
+class ShopAssignment(models.Model):
+    """Stores historical shop assignments and payment types."""
 
+    contractor = models.ForeignKey(
+        Contractor,
+        on_delete=models.PROTECT,
+        related_name="assignments"
+    )
+
+    shop = models.ForeignKey(
+        Shop,
+        on_delete=models.PROTECT
+    )
+
+    pay_type = models.CharField(
+        max_length=20,
+        choices=PayType.choices,
+        default=PayType.WEEKLY_RENT
+    )
+
+    effective_from = models.DateField()  # Date the assignment takes effect.
+
+    class Meta:
+        ordering = ["-effective_from"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["contractor", "effective_from"],
+                name="unique_contractor_assignment_date"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.contractor} - {self.shop}"
 # ---------------------------------------------------------------------------
 # Payments and corrections (US-01, SF-1)
 # ---------------------------------------------------------------------------

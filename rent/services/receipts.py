@@ -9,6 +9,7 @@ from urllib.parse import quote
 from rent.formatting import format_money
 from rent.models import Receipt
 from rent.services import rent_rules
+from rent.services.contractors import shop_for
 
 
 def create_receipt(payment, *, corrects=None):
@@ -34,11 +35,22 @@ def latest_receipt(payment):
 
 def receipts_for_shop(shop, limit=50):
     """Newest receipts for a shop's contractors."""
-    return list(
-        Receipt.objects.filter(payment__contractor__shop=shop)
-        .select_related("payment__contractor", "payment__rent_period", "payment__recorded_by", "corrects")
-        .order_by("-created_at", "-pk")[:limit]
-    )
+
+    receipts = Receipt.objects.select_related(
+        "payment__contractor",
+        "payment__rent_period",
+        "payment__recorded_by",
+        "corrects"
+    ).order_by("-created_at", "-pk")
+
+    # AC-4: Filter receipts using the historical shop assignment.
+    return [
+        receipt for receipt in receipts
+        if shop_for(
+            receipt.payment.contractor,
+            receipt.payment.rent_period
+        ) == shop
+    ][:limit]
 
 
 def receipt_details(receipt):
@@ -64,7 +76,7 @@ def receipt_details(receipt):
     return {
         "receipt": receipt,
         "number": receipt.number,
-        "shop": contractor.shop,
+        "shop": shop_for(contractor, payment.rent_period),
         "contractor": contractor,
         "period": payment.rent_period,
         "amount": amount,

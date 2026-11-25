@@ -5,7 +5,7 @@ from decimal import Decimal
 from django.test import TestCase
 from django.urls import reverse
 
-from rent.models import Contractor, Payment
+from rent.models import Contractor, PayType, Payment, ShopAssignment
 from rent.services import rent_rules
 from rent.tests.helpers import PASSWORD, make_world
 from rent.views.home import supervisor_rows
@@ -45,6 +45,15 @@ class SupervisorRowsTests(TestCase):
     def test_nothing_overdue_before_due_day(self):
         rows = supervisor_rows(self.contractors, self.w.period, today=date(2026, 11, 6))
         self.assertTrue(all(r["overdue_total"] == 0 for r in rows))
+
+    def test_pay_type_is_the_one_for_this_week(self):
+        # Changed to commission from this week; the contractor record still says weekly rent (US-05 AC-3).
+        ShopAssignment.objects.create(contractor=self.w.taylor_c, shop=self.w.taylor,
+                                      pay_type=PayType.COMMISSION, effective_from=self.w.period.start_date)
+        rows = supervisor_rows(self.contractors, self.w.period, today=date(2026, 11, 5))
+        by_contractor = {r["contractor"]: r["pay_type"] for r in rows}
+        self.assertEqual(by_contractor[self.w.taylor_c], PayType.COMMISSION.label)
+        self.assertEqual(by_contractor[self.w.taylor_sup], PayType.WEEKLY_RENT.label)
 
 
 class HomePageTests(TestCase):
