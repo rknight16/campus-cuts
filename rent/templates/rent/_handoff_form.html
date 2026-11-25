@@ -1,0 +1,26 @@
+{% load ui money %}
+{% comment %}One handoff recording form (US-03). Used by handoffs.html for both steps.
+`folded`: something is waiting to be confirmed, so the form starts closed behind its heading
+(it opens again by itself when it comes back with errors).{% endcomment %}
+{% if folded %}<details class="record-fold"{% if form.is_bound %} open{% endif %}><summary class="btn secondary">{% icon "cash" %}{{ heading }}</summary>{% endif %}
+<form method="post" class="card stack" data-handoff-form>
+  {% csrf_token %}
+  <input type="hidden" name="action" value="{{ action }}">
+  {% if not folded %}<h2 class="with-icon">{% icon "cash" %}{{ heading }}</h2>{% endif %}
+  <p class="muted">{{ intro }}</p>
+  {% if form.has_open_periods %}
+    {% for field in form %}
+      <label>{{ field.label }}{% if field.name == "amount" %} ($){% endif %}{{ field }}</label>
+      {% if field.errors %}<p class="field-error" id="{{ field.auto_id }}-error">{% icon "alert" %}<span>{{ field.errors.0 }}</span></p>{% endif %}
+      {% if field.name == "period" %}
+        <p class="expected" data-expected-note{% if form.selected_expected is None %} hidden{% endif %}>{% icon "receipt" %}<span>{{ expected_lead }} <strong data-expected-amount>{{ form.selected_expected|money }}</strong> {{ expected_tail }}</span></p>
+      {% elif field.name == "amount" %}
+        <p class="diff" id="handoff-diff" aria-live="polite"></p>
+      {% endif %}
+    {% endfor %}
+    <button class="btn big">{% icon "handoff" %}{{ button }}</button>
+  {% else %}
+    <p class="empty">{% icon "check" %}<span>Every recent rent period has been handed over.</span></p>
+  {% endif %}
+</form>
+{% if folded %}</details>{% endif %}

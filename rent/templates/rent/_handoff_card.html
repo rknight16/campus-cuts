@@ -1,0 +1,53 @@
+{% load ui money %}
+{# One handoff (US-03). `waiting` is true when this user has to confirm it: the card turns black and offers the confirm form. #}
+<li class="handoff{% if h.is_mismatch %} is-mismatch{% endif %}{% if waiting %} needs-action{% endif %}">
+  <div class="handoff-head">
+    <span class="shop-icon" aria-hidden="true">{% if h.shop %}{% icon "shop" %}{% else %}{% icon "user" %}{% endif %}</span>
+    <div class="handoff-title">
+      <h3>{{ h.shop.name|default:"All shops" }}</h3>
+      <span>{{ h.get_step_display }}</span>
+    </div>
+    <span class="handoff-badges">
+      {% status_badge h.get_status_display %}
+      {% if h.is_mismatch %}{% status_badge "Mismatch" %}{% endif %}
+    </span>
+  </div>
+
+  <dl class="handoff-amounts">
+    <div><dt>Expected</dt><dd>{{ h.expected_amount|money }}</dd></div>
+    <div{% if h.amount_handed != h.expected_amount %} class="off"{% endif %}>
+      <dt>Handed</dt><dd>{{ h.amount_handed|money }}{% if h.amount_handed != h.expected_amount %}<span class="sr-only"> (different from expected)</span>{% endif %}</dd>
+    </div>
+    <div{% if h.amount_received is not None and h.amount_received != h.expected_amount %} class="off"{% endif %}>
+      <dt>Received</dt>
+      <dd>{% if h.amount_received is None %}<span class="muted">Not yet</span>{% else %}{{ h.amount_received|money }}{% if h.amount_received != h.expected_amount %}<span class="sr-only"> (different from expected)</span>{% endif %}{% endif %}</dd>
+    </div>
+  </dl>
+
+  <p class="handoff-meta">
+    {% icon "calendar" %}{{ h.rent_period }}<br>
+    {% icon "user" %}Handed over by {{ h.handed_by.get_full_name|default:h.handed_by }} on {{ h.handed_date|date:"j M Y" }}
+    {% if h.confirmed_by %}<br>{% icon "check" %}Confirmed by {{ h.confirmed_by.get_full_name|default:h.confirmed_by }} on {{ h.confirmed_at|date:"j M Y, g:i a" }}{% endif %}
+  </p>
+
+  {% if waiting %}
+  <form method="post" class="confirm-row" onsubmit="return confirm('Are you sure you want to confirm this handoff?');">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="confirm">
+    <input type="hidden" name="handoff_id" value="{{ h.pk }}">
+    <p class="confirm-summary">You are confirming the <strong>{{ h.amount_handed|money }}</strong> {{ h.handed_by.get_full_name|default:h.handed_by }} handed over on {{ h.handed_date|date:"j M" }}.</p>
+    <button class="btn" name="received_exact" value="1" formnovalidate>{% icon "check" %}Received exactly {{ h.amount_handed|money }}</button>
+    <details class="confirm-other">
+      <summary>I received a different amount</summary>
+      <div class="confirm-other-row">
+        <label>Amount actually received ($)
+          <input type="number" name="amount_received" inputmode="decimal" autocomplete="off" min="0.01" step="0.01" required
+                 data-expected="{{ h.amount_handed|floatformat:'2u' }}" data-compare-noun="handed over" data-diff-id="diff-{{ h.pk }}" aria-describedby="diff-{{ h.pk }}">
+        </label>
+        <button class="btn secondary">{% icon "check" %}Confirm this amount</button>
+        <p class="diff" id="diff-{{ h.pk }}" aria-live="polite"></p>
+      </div>
+    </details>
+  </form>
+  {% endif %}
+</li>

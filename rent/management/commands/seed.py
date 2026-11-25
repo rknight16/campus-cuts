@@ -90,6 +90,7 @@ class Command(BaseCommand):
             c = Contractor.objects.create(
                 user=user, full_name=f"{first} {last}", staff_id=staff_id, shop=shops[shop_i],
                 trade=trade, pay_type=pay_type,
+                joined_on=start.start_date,  # everyone has worked here since rent started (US-06 AC-2)
                 phone="" if i == 16 else f"876-555-{100 + i:04d}",  # one with no phone (US-07 AC-3)
             )
             if is_sup:
