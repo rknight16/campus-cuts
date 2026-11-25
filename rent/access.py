@@ -67,12 +67,28 @@ def ensure_own_contractor(user, contractor):
     raise PermissionDenied("You can only see your own account.")
 
 
-def contractors_visible_to(user):
-    """Queryset of contractors this user may see in lists."""
-    from .models import Contractor
+def contractors_visible_to(user, period=None):
+    """Return contractors the user is allowed to see."""
+
+    from .models import Contractor, RentPeriod
+    from rent.services.contractors import shop_for
+
     qs = Contractor.objects.select_related("shop", "user")
+
     if user.role in (Role.OWNER, Role.COMPANY_SUPERVISOR):
         return qs
+
     if user.role == Role.SHOP_SUPERVISOR:
-        return qs.filter(shop=user.supervised_shop)
+
+        if period is None:
+            period = RentPeriod.current()
+
+        # US-05 AC-4: Use the shop assigned for the selected period.
+        contractor_ids = [
+            contractor.pk for contractor in qs
+            if shop_for(contractor, period) == user.supervised_shop
+        ]
+
+        return qs.filter(pk__in=contractor_ids)
+
     return qs.filter(user=user)

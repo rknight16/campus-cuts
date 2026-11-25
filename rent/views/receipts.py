@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404, render
 from rent.access import ensure_own_contractor, ensure_same_shop, role_required
 from rent.models import Receipt, Role
 from rent.services import receipts as receipt_service
+from rent.services.contractors import shop_for
 
 
 @role_required(Role.SHOP_SUPERVISOR)
@@ -28,7 +29,7 @@ def receipt_detail(request, receipt_id):
     contractor = receipt.payment.contractor
     user = request.user
     if user.role == Role.SHOP_SUPERVISOR:
-        ensure_same_shop(user, contractor.shop)
+        ensure_same_shop(user, shop_for(contractor, receipt.payment.rent_period))
         can_send = True
     elif user.role == Role.CONTRACTOR:
         ensure_own_contractor(user, contractor)

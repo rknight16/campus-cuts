@@ -7,9 +7,10 @@ from django.db.models import Count, Q
 from django.shortcuts import redirect, render
 
 from rent.access import contractors_visible_to, role_required
-from rent.models import Handoff, HandoffStatus, HandoffStep, Role, RentPeriod, Shop
+from rent.models import Contractor, Handoff, HandoffStatus, HandoffStep, Role, RentPeriod, Shop
 from rent.services import rent_settings
 from rent.services import rent_rules
+from rent.services.contractors import shop_for
 
 # Who needs attention first on the supervisor's list
 STATUS_ORDER = {
@@ -55,7 +56,11 @@ def shop_cards(shops, period, last_period, user, today=None):
     cards = []
     for shop in shops:
         collected = outstanding = overdue = rent_rules.ZERO
-        for contractor in shop.contractors.filter(is_active=True):
+        for contractor in Contractor.objects.filter(is_active=True):
+
+            # AC-4: Only include contractors assigned to this shop for the period.
+            if shop_for(contractor, period) != shop:
+                continue
             week = rent_rules.summary(contractor, period)
             collected += week["paid"]
             outstanding += week["balance"] or rent_rules.ZERO
@@ -74,9 +79,16 @@ def shop_cards(shops, period, last_period, user, today=None):
 
 
 def _shops_page(request, heading):
-    shops = Shop.objects.select_related("supervisor").annotate(
-        active_contractors=Count("contractors", filter=Q(contractors__is_active=True)))
     period = RentPeriod.current()
+    shops = Shop.objects.select_related("supervisor")
+    contractors = Contractor.objects.filter(is_active=True)
+
+    # Count contractors using their assigned shop for the current week.
+    for shop in shops:
+        shop.active_contractors = sum(
+            1 for contractor in contractors
+            if shop_for(contractor, period) == shop
+        )
     last_period = RentPeriod.for_date(period.start_date - timedelta(days=7))
     cards = shop_cards(shops, period, last_period, request.user)
     return render(request, "rent/home_shops.html", {

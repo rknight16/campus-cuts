@@ -23,6 +23,7 @@ from django.core.validators import DecimalValidator
 from django.db import IntegrityError, transaction
 from django.db.models import Sum
 from django.utils import timezone
+from rent.services.contractors import shop_for
 
 from rent.models import (
     Handoff,
@@ -80,24 +81,22 @@ def _validate_handed_date(handed_date):
 
 
 def _shop_expected_amount(shop, period):
-    """
-    Calculate the expected amount for a shop.
+    """Calculate the expected handoff amount for a shop."""
 
-    This is the total of all payments recorded for contractors
-    belonging to the selected shop within the rent period (AC-2).
-    """
-    result = Payment.objects.filter(
-        # Only include payments made by contractors at this shop.
-        contractor__shop=shop,
+    # Get payments made during the selected week.
+    payments = Payment.objects.filter(
+        payment_date__range=(period.start_date, period.end_date)
+    ).select_related("contractor", "rent_period")
 
-        # Only include payments whose payment dates fall within
-        # the selected rent period.
-        payment_date__range=(period.start_date, period.end_date),
-    ).aggregate(total=Sum("amount"))
+    total = Decimal("0.00")
 
-    # Return the calculated total.
-    # If no payments exist, return 0.00 instead of None.
-    return result["total"] or Decimal("0.00")
+    for payment in payments:
+
+        # US-05 AC-4: Use the shop assigned for the payment's rent period.
+        if shop_for(payment.contractor, payment.rent_period) == shop:
+            total += payment.amount
+
+    return total
 
 def _owner_expected_amount(period):
     """

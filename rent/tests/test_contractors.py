@@ -5,7 +5,7 @@ from decimal import Decimal
 from unittest.mock import patch
 
 from django.test import TestCase
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, PermissionDenied
 from django.contrib.auth import authenticate
 from django.urls import reverse
 
@@ -448,3 +448,81 @@ class ContractorTests(TestCase):
                 )
 
                 self.assertEqual(response.status_code, 403)
+
+        # AC-4: Verify payment permissions after a contractor transfer.
+    def test_ac4_record_payment_after_transfer(self):
+
+        contractor = self.w.taylor_c
+        old_period = self.w.period
+        new_period = old_period.next()
+
+        # Schedule the transfer on Wednesday, November 4.
+        with patch(
+            "django.utils.timezone.localdate",
+            return_value=date(2026, 11, 4)
+        ):
+            contractors.transfer(
+                contractor=contractor,
+                new_shop=self.w.utech
+            )
+
+        # Taylor Hall supervisor can record rent before the transfer.
+        with patch(
+            "django.utils.timezone.localdate",
+            return_value=date(2026, 11, 6)
+        ):
+            old_payment = payments.record_payment(
+                contractor=contractor,
+                period=old_period,
+                amount=Decimal("15000.00"),
+                payment_date=date(2026, 11, 6),
+                recorded_by=self.w.taylor_sup.user
+            )
+
+        self.assertEqual(old_payment.amount, Decimal("15000.00"))
+
+        # The transfer takes effect on Monday, November 9.
+        with patch(
+            "django.utils.timezone.localdate",
+            return_value=date(2026, 11, 9)
+        ):
+
+            # The old supervisor cannot record rent for the new period.
+            with self.assertRaises(PermissionDenied):
+                payments.record_payment(
+                    contractor=contractor,
+                    period=new_period,
+                    amount=Decimal("12000.00"),
+                    payment_date=date(2026, 11, 9),
+                    recorded_by=self.w.taylor_sup.user
+                )
+
+            # The new supervisor can successfully record the payment.
+            new_payment = payments.record_payment(
+                contractor=contractor,
+                period=new_period,
+                amount=Decimal("12000.00"),
+                payment_date=date(2026, 11, 9),
+                recorded_by=self.w.utech_sup.user
+            )
+
+        # Verify the payment was recorded by the correct supervisor.
+        self.assertEqual(new_payment.recorded_by, self.w.utech_sup.user)
+        self.assertEqual(new_payment.amount, Decimal("12000.00"))
+
+        # Both rent periods should now be fully paid.
+        self.assertEqual(
+            rent_rules.balance(contractor, old_period),
+            Decimal("0.00")
+        )
+
+        self.assertEqual(
+            rent_rules.balance(contractor, new_period),
+            Decimal("0.00")
+        )
+
+        # Both payment records must be preserved.
+        self.assertEqual(
+            Payment.objects.filter(contractor=contractor).count(),
+            2
+        )
