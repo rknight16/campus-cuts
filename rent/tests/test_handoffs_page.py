@@ -99,6 +99,17 @@ class ConfirmRowTests(HandoffPageTestCase):
         self.assertContains(response, 'data-expected="15000.00"')
         self.assertContains(response, "needs-action")
 
+    def test_confirm_asks_are_you_sure_first(self):
+        # DEF-3-01: SF-3 says the user must confirm before a handoff is confirmed
+        Handoff.objects.create(
+            step=HandoffStep.SHOP_TO_COMPANY, shop=self.w.taylor, rent_period=self.w.period,
+            expected_amount=Decimal("15000"), amount_handed=Decimal("15000"), handed_date=TODAY,
+            handed_by=self.w.taylor_sup.user, status=HandoffStatus.AWAITING,
+        )
+        self.client.force_login(self.w.company)
+        response = self.client.get(self.url)
+        self.assertContains(response, "return confirm('Are you sure you want to confirm this handoff?')")
+
 
 class LoginTests(TestCase):
     def test_failed_login_keeps_the_username(self):
