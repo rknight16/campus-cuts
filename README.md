@@ -76,7 +76,7 @@ Password for every account: `campuscuts2026`
 | c1002 | Independent contractor at Taylor Hall |
 | c1011 | Contractor on commission at the Students' Union |
 
-Contractor usernames are `c` + staff ID (1001 to 1017). `python manage.py seed` wipes and reloads everything, so run it whenever you want a clean demo. It also loads last week's payments, with three contractors short, so the dashboard and overdue screens have something to show.
+Contractor usernames are `c` + staff ID (1001 to 1017). `python manage.py seed` wipes and reloads everything, so run it whenever you want a clean demo. It loads three weeks of rent with a receipt for every payment, three contractors short last week (overdue), a corrected payment, commission earnings, handoffs in every state (including a mismatch and ones waiting for the Company Supervisor and the Owner), next week's Taylor Hall rent change, a transfer, a pay-type change and a deactivated contractor, so every screen has something to show. The list of what it loads is at the top of `rent/management/commands/seed.py`. To receive Kemar Brown's (`c1002`) WhatsApp receipts on your own phone during a demo, add `DEMO_PHONE=876-xxx-xxxx` to your `.env`.
 
 ## Who builds what
 
