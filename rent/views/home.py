@@ -7,10 +7,10 @@ from django.db.models import Count, Q
 from django.shortcuts import redirect, render
 
 from rent.access import contractors_visible_to, role_required
-from rent.models import Contractor, Handoff, HandoffStatus, HandoffStep, Role, RentPeriod, Shop
+from rent.models import Contractor, Handoff, HandoffStatus, HandoffStep, PayType, Role, RentPeriod, Shop
 from rent.services import rent_settings
 from rent.services import rent_rules
-from rent.services.contractors import shop_for
+from rent.services.contractors import pay_type_for, shop_for
 
 # Who needs attention first on the supervisor's list
 STATUS_ORDER = {
@@ -124,6 +124,8 @@ def supervisor_rows(contractors, period, today=None):
         overdue = rent_rules.overdue_periods(c, today)
         rows.append({
             "contractor": c,
+            # The pay type for this week, so a scheduled change (US-05 AC-3) shows once it applies
+            "pay_type": PayType(pay_type_for(c, period)).label,
             "summary": rent_rules.summary(c, period),
             "overdue_total": sum((owing for _, owing in overdue), rent_rules.ZERO),
         })
