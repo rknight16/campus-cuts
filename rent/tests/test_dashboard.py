@@ -117,3 +117,27 @@ class DashboardPageTests(TestCase):
             handed_date=date(2026, 11, 3), handed_by=self.w.taylor_sup.user)
         self.client.force_login(self.w.owner)
         self.assertContains(self.client.get(self.url), "Mismatch")
+
+class DeactivatedContractorTests(TestCase):
+    """US-05 AC-6 on the dashboard: a deactivated contractor's unpaid balance stays overdue,
+    but they are not charged for weeks after they were deactivated."""
+
+    def setUp(self):
+        self.w = make_world()
+        self.taylor3 = make_contractor("taylor3", "1003", self.w.taylor)
+        for contractor, amount in ((self.w.taylor_sup, "15000"), (self.taylor3, "15000"), (self.w.taylor_c, "10000")):
+            Payment.objects.create(contractor=contractor, rent_period=self.w.period, amount=Decimal(amount),
+                                   payment_date=date(2026, 11, 3), recorded_by=self.w.taylor_sup.user)
+        # taylor_c leaves on Saturday 7 Nov still owing $5,000 for 2 to 8 Nov
+        self.w.taylor_c.is_active = False
+        self.w.taylor_c.deactivated_on = NOV_7
+        self.w.taylor_c.save()
+
+    def test_deactivated_contractors_balance_stays_overdue(self):
+        taylor = row_for(dashboard.shop_summary(today=NOV_7), self.w.taylor)
+        self.assertEqual(taylor["overdue"], Decimal("5000"))
+
+    def test_deactivated_contractor_is_not_charged_the_next_week(self):
+        taylor = row_for(dashboard.shop_summary(today=date(2026, 11, 11)), self.w.taylor)
+        self.assertEqual(taylor["owed"], Decimal("30000"))     # 2 x $15,000, not 3
+        self.assertEqual(taylor["overdue"], Decimal("5000"))   # the old balance is still owed

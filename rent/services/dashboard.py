@@ -23,7 +23,9 @@ def shop_summary(today=None):
     for shop in Shop.objects.select_related("supervisor"):
         owed = paid = balance = overdue = ZERO
         awaiting_earnings = 0
-        for contractor in shop.contractors.filter(is_active=True):
+        # Deactivated contractors stay in: rent_rules charges them nothing after deactivated_on,
+        # but any balance they still owe stays overdue (US-05 AC-6).
+        for contractor in shop.contractors.all():
             week = rent_rules.summary(contractor, period)
             paid += week["paid"]
             if week["owed"] is None:
