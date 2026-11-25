@@ -60,7 +60,7 @@ def _validate_amount(value, field_name):
     # Handoff amounts must be greater than zero.
     if amount <= Decimal("0"):
         raise ValidationError({
-            field_name: "The amount must be greater than zero."
+            field_name: "The amount is invalid."
         })
 
     return amount

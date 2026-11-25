@@ -67,6 +67,9 @@ class HandoffForm(forms.Form):
         decimal_places=2,
         min_value=0.01,
         label="Amount handed over",
+        error_messages={
+            "min_value": "The amount is invalid."
+        },
         widget=forms.NumberInput(attrs={"autocomplete": "off", "inputmode": "decimal", "step": "0.01", "min": "0.01"}),
     )
     # The date the cash changed hands. Defaults to today; later dates are not allowed.
@@ -178,6 +181,9 @@ class ConfirmHandoffForm(forms.Form):
         decimal_places=2,
         min_value=0.01,
         label="Amount actually received",
+        error_messages={
+            "min_value": "The amount is invalid."
+        },
     )
 
 

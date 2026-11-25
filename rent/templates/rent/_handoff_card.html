@@ -31,7 +31,7 @@
   </p>
 
   {% if waiting %}
-  <form method="post" class="confirm-row">
+  <form method="post" class="confirm-row" onsubmit="return confirm('Are you sure you want to confirm this handoff?');">
     {% csrf_token %}
     <input type="hidden" name="action" value="confirm">
     <input type="hidden" name="handoff_id" value="{{ h.pk }}">
