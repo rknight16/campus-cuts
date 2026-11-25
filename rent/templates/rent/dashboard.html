@@ -2,62 +2,64 @@
 {% load ui money %}
 {% block title %}Rent collection dashboard · Campus Cuts Rent{% endblock %}
 {% block content %}
-<h1>Rent collection dashboard</h1>
-<p>{% icon "calendar" %}{{ period }}, {{ shops|length }} shop{{ shops|length|pluralize }}</p>
+{# US-04 - owner: Dylandre Henry. Figures come from rent.services.dashboard.shop_summary(). #}
+<header class="page-head">
+  <h1>Rent collection dashboard</h1>
+  <p class="period">{% icon "calendar" %}{{ period }}, {{ shops|length }} shop{{ shops|length|pluralize }}</p>
+</header>
 
-<h2>All shops</h2>
-<p>
-  Owed {{ totals.owed|money }} ·
-  Paid {{ totals.paid|money }} ·
-  Balance {{ totals.balance|money }} ·
-  Overdue {{ totals.overdue|money }}
-</p>
+{# AC-1: totals for all shops; AC-2: overdue is balance still owed after any due day #}
+<dl class="tally tally-dash" aria-label="All shops">
+  <div><dt>Owed this week</dt><dd>{{ totals.owed|money }}</dd></div>
+  <div><dt>Paid this week</dt><dd>{{ totals.paid|money }}</dd></div>
+  <div{% if totals.overdue %} class="tally-alert"{% endif %}><dt>Overdue</dt><dd>{{ totals.overdue|money }}</dd></div>
+  <div class="tally-key"><dt>Balance this week</dt><dd>{{ totals.balance|money }}</dd></div>
+</dl>
 
-<table>
+<h2 class="with-icon">{% icon "shop" %}By shop</h2>
+{% if shops %}
+<div class="table-wrap dash-wrap">
+<table class="dash-table">
   <thead>
     <tr>
-      <th>Shop</th>
-      <th>Owed</th>
-      <th>Paid</th>
-      <th>Balance</th>
-      <th>Overdue</th>
-      <th>Handoff</th>
+      <th scope="col">Shop</th>
+      <th scope="col" class="num">Owed</th>
+      <th scope="col" class="num">Paid</th>
+      <th scope="col" class="num">Balance</th>
+      <th scope="col" class="num">Overdue</th>
+      <th scope="col">Handoff this week</th>
     </tr>
   </thead>
   <tbody>
     {% for row in shops %}
     <tr>
-      <td>
+      <th scope="row">
         {{ row.shop.name }}
-        {% if row.awaiting_earnings %}
-          <br><small>{{ row.awaiting_earnings }} contractor{{ row.awaiting_earnings|pluralize }} with earnings not entered</small>
-        {% endif %}
-      </td>
-      <td>{{ row.owed|money }}</td>
-      <td>{{ row.paid|money }}</td>
-      <td>{{ row.balance|money }}</td>
-      <td>
-        {% if row.overdue %}{% status_badge "Overdue" %} {% endif %}{{ row.overdue|money }}
-      </td>
+        {% if row.awaiting_earnings %}<small class="due">{{ row.awaiting_earnings }} contractor{{ row.awaiting_earnings|pluralize }} with earnings not entered</small>{% endif %}
+      </th>
+      <td class="num">{{ row.owed|money }}</td>
+      <td class="num">{{ row.paid|money }}</td>
+      <td class="num">{{ row.balance|money }}</td>
+      <td class="num">{% if row.overdue %}<strong>{{ row.overdue|money }}</strong>{% else %}<span class="muted">{{ row.overdue|money }}</span>{% endif %}</td>
       <td>
         {% with h=row.handoff %}
           {% if h %}
-            {% status_badge h.get_status_display %}
+            <span class="dash-badges">{% status_badge h.get_status_display %}{% if h.is_mismatch %}{% status_badge "Mismatch" %}{% endif %}</span>
             {% if h.is_mismatch %}
-              {% status_badge "Mismatch" %}<br>
-              <small>
-                Expected {{ h.expected_amount|money }}, handed {{ h.amount_handed|money }}{% if h.amount_received is not None %}, received {{ h.amount_received|money }}{% endif %}
-              </small>
+              {# UC-04 A3: expected and actual side by side #}
+              <small class="due">Expected {{ h.expected_amount|money }}, handed {{ h.amount_handed|money }}{% if h.amount_received is not None %}, received {{ h.amount_received|money }}{% endif %}</small>
             {% endif %}
           {% else %}
-            Not yet handed over
+            <span class="muted">Not yet handed over</span>
           {% endif %}
         {% endwith %}
       </td>
     </tr>
-    {% empty %}
-    <tr><td colspan="6">No shops yet.</td></tr>
     {% endfor %}
   </tbody>
 </table>
+</div>
+{% else %}
+<p class="empty">{% icon "shop" %}<span>No shops yet.</span></p>
+{% endif %}
 {% endblock %}
